@@ -56,7 +56,7 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 
 ### 🔧 Prerequisites
 
-* Terraform CLI ≥ `1.9.3`
+* Terraform CLI
 * AWS credentials with appropriate IAM permissions
 * S3 bucket + DynamoDB table for remote state storing
 * Jenkins agent (for CI/CD)
