@@ -105,13 +105,13 @@ infra_eks_version       = "1.32"
 terraform init
 
 # Plan for dev
-terraform plan -var-file=environments/dev.tfvars
+terraform plan -var-file=environments/dev/dev.tfvars
 
 # Apply for dev
-terraform apply -var-file=environments/dev.tfvars
+terraform apply -var-file=environments/dev/dev.tfvars
 
 # Destroy dev
-terraform destroy -var-file=environments/dev.tfvars
+terraform destroy -var-file=environments/dev/dev.tfvars
 ```
 
 ---
