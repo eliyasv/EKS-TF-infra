@@ -26,6 +26,7 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 │   ├── iam
 │   │   ├── main.tf
 │   │   ├── outputs.tf
+|   |   ├── data.tf
 │   │   └── variables.tf
 │   └── vpc
 │       ├── main.tf
