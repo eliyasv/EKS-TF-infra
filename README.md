@@ -16,6 +16,7 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 │   └── prod
 │       ├── backend.tf
 │       └── prod.tfvars
+├── .gitignore
 ├── Jenkinsfile
 ├── main.tf
 ├── modules
@@ -24,9 +25,9 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 │   │   ├── outputs.tf
 │   │   └── variables.tf
 │   ├── iam
+│   │   ├── data.tf
 │   │   ├── main.tf
 │   │   ├── outputs.tf
-|   |   ├── data.tf
 │   │   └── variables.tf
 │   └── vpc
 │       ├── main.tf
@@ -36,6 +37,7 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 ├── providers.tf
 ├── README.md
 └── variables.tf
+
 
 ```
 
