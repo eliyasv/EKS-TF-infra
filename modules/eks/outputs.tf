@@ -14,12 +14,12 @@ output "ignite_cluster_version" {
 }
 
 output "ignite_nodegroup_ondemand_name" {
-  value       = aws_eks_node_group.ignite_ondemand_nodes.node_group_name
+  value       = aws_eks_node_group.ignite_ondemand_nodes[0].node_group_name
   description = "Name of the on-demand node group"
 }
 
 output "ignite_nodegroup_spot_name" {
-  value       = aws_eks_node_group.ignite_spot_nodes.node_group_name
+  value       = aws_eks_node_group.ignite_spot_nodes[0].node_group_name
   description = "Name of the spot node group"
 }
 

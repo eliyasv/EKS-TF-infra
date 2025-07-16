@@ -70,7 +70,7 @@ resource "aws_iam_openid_connect_provider" "ignite_eks_oidc_provider" {
 resource "aws_iam_role" "ignite_irsa_role" {
   count              = var.infra_enable_irsa ? 1 : 0
   name               = "${var.infra_environment}-${var.infra_project_name}-irsa-role"
-  assume_role_policy = data.aws_iam_policy_document.infra_irsa_assume_policy.json
+  assume_role_policy = data.aws_iam_policy_document.infra_irsa_assume_policy[0].json
 
   tags = {
     Name        = "${var.infra_environment}-${var.infra_project_name}-irsa-role"
