@@ -12,7 +12,7 @@ infra_subnet_azs           = ["us-east-1a", "us-east-1b", "us-east-1c"]
 
 # EKS Cluster Configuration
 infra_enable_eks          = true
-infra_cluster_version     = "1.32"
+infra_cluster_version     = "1.31"
 infra_enable_private_api  = true
 infra_enable_public_api   = false
 
