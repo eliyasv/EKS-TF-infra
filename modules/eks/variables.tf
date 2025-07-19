@@ -13,6 +13,12 @@ variable "infra_project_name" {
   type        = string
 }
 
+variable "infra_region" {
+  description = "AWS region to deploy infrastructure"
+  type        = string
+  default     = "us-east-1"
+}
+
 variable "infra_tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
