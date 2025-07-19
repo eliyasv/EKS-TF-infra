@@ -2,16 +2,17 @@
 infra_environment  = "dev"
 infra_region       = "us-east-1"
 infra_project_name = "project-ignite"
+infra_cluster_name = "ignite-cluster-dev"
 
 # VPC Configuration
-infra_vpc_cidr_block       = "10.100.0.0/16"
+infra_vpc_cidr             = "10.100.0.0/16"
 infra_public_subnet_cidrs  = ["10.100.0.0/20", "10.100.16.0/20", "10.100.32.0/20"]
 infra_private_subnet_cidrs = ["10.100.128.0/20", "10.100.144.0/20", "10.100.160.0/20"]
 infra_subnet_azs           = ["us-east-1a", "us-east-1b", "us-east-1c"]
 
 # EKS Cluster Configuration
 infra_enable_eks          = true
-infra_eks_cluster_version = "1.32"
+infra_cluster_version     = "1.32"
 infra_enable_private_api  = true
 infra_enable_public_api   = false
 
