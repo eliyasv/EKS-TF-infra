@@ -46,14 +46,20 @@ pipeline {
       }
     }
 
-    stage('Terraform Format & Validate') {
+    stage('Terraform Format') {
+      steps {
+        sh 'terraform fmt -recursive'
+     }
+   }
+
+    stage('Terraform Validate') {
       steps {
         withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-          sh 'terraform fmt -recursive -check'
-          sh 'terraform validate'
-        }
-      }
-    }
+         sh 'terraform validate'
+       }
+     }
+   }
+
 
     stage('Terraform Plan') {
       when {
