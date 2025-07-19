@@ -14,5 +14,4 @@ override.tf.json
 *_override.tf.json
 
 # Local variable definitions
-*.tfvars
 *.tfvars.json
