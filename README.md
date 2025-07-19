@@ -101,22 +101,48 @@ infra_eks_version       = "1.32"
 
 ---
 
-### 🚀 Usage
+### ✅ Per-Environment Terraform Workflow (Locally)
+
+
+You can deploy or manage infrastructure for each environment (`dev`, `prod`, etc.) independently using their own backend and variable files.
+
+> 📌 All commands should be run from the project root (`EKS-TF-infra/`)
+
+### 🔧 Steps for `dev` Environment
+
+---
 
 ```bash
+
+# Copy backend config
+cp environments/dev/backend.tf ./backend.tf
+
 # Initialize Terraform
 terraform init
 
-# Plan for dev
-terraform plan -var-file=environments/dev/dev.tfvars
+# Plan for dev(This creates an execution plan based on the dev environment variables.)
+terraform plan -var-file=environments/dev/dev.tfvars -out=tfplan-dev
+
 
 # Apply for dev
-terraform apply -var-file=environments/dev/dev.tfvars
+terraform apply tfplan-dev
+
 
 # Destroy dev
 terraform destroy -var-file=environments/dev/dev.tfvars
-```
 
+# Clean up
+rm backend.tf
+```
+### 🔁 Switching Between Environments (e.g. prod)
+
+```bash
+cp environments/prod/backend.tf ./backend.tf
+terraform init -reconfigure
+terraform plan -var-file=environments/prod/prod.tfvars -out=tfplan-prod
+terraform apply tfplan-prod
+
+```
 ---
 
 ### 🛠️ CI/CD with Jenkins
