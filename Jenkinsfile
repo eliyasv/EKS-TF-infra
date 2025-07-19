@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    TF_VERSION = '1.9.3'
+    TF_VERSION = '1.8.5'
     AWS_REGION = 'us-east-1'
     GIT_REPO   = 'https://github.com/eliyasv/EKS-TF-infra.git'
     GIT_BRANCH = 'main'
@@ -30,8 +30,9 @@ pipeline {
         withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
           dir("environments/${params.ENVIRONMENT}") {
             sh """
+              which terraform 
               terraform --version
-              terraform init
+              terraform init -reconfigure
             """
           }
         }
@@ -43,7 +44,7 @@ pipeline {
         withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
           dir("environments/${params.ENVIRONMENT}") {
             sh 'terraform fmt -recursive -check'
-            sh "terraform validate -var-file=${params.ENVIRONMENT}.tfvars"
+            sh 'terraform validate'
           }
         }
       }
