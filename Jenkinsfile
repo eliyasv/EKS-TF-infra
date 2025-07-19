@@ -25,16 +25,23 @@ pipeline {
       }
     }
 
+    stage('Prepare Backend') {
+      steps {
+        script {
+          // Copy the per-env backend.tf to root
+          sh "cp environments/${params.ENVIRONMENT}/backend.tf ./backend.tf"
+        }
+      }
+    }
+
     stage('Terraform Init') {
       steps {
         withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-          dir("environments/${params.ENVIRONMENT}") {
-            sh """
-              which terraform 
-              terraform --version
-              terraform init -reconfigure
-            """
-          }
+          sh """
+            which terraform
+            terraform --version
+            terraform init -reconfigure
+          """
         }
       }
     }
@@ -42,10 +49,8 @@ pipeline {
     stage('Terraform Format & Validate') {
       steps {
         withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-          dir("environments/${params.ENVIRONMENT}") {
-            sh 'terraform fmt -recursive -check'
-            sh 'terraform validate'
-          }
+          sh 'terraform fmt -recursive -check'
+          sh 'terraform validate'
         }
       }
     }
@@ -56,9 +61,7 @@ pipeline {
       }
       steps {
         withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-          dir("environments/${params.ENVIRONMENT}") {
-            sh "terraform plan -var-file=${params.ENVIRONMENT}.tfvars -out=tfplan-${params.ENVIRONMENT}"
-          }
+          sh "terraform plan -var-file=environments/${params.ENVIRONMENT}/${params.ENVIRONMENT}.tfvars -out=tfplan-${params.ENVIRONMENT}"
         }
       }
     }
@@ -69,10 +72,8 @@ pipeline {
       }
       steps {
         withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-          dir("environments/${params.ENVIRONMENT}") {
-            input message: "Are you sure you want to APPLY changes to ${params.ENVIRONMENT}?", ok: "Yes, apply"
-            sh "terraform apply -auto-approve tfplan-${params.ENVIRONMENT}"
-          }
+          input message: "Are you sure you want to APPLY changes to ${params.ENVIRONMENT}?", ok: "Yes, apply"
+          sh "terraform apply -auto-approve tfplan-${params.ENVIRONMENT}"
         }
       }
     }
@@ -83,10 +84,8 @@ pipeline {
       }
       steps {
         withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-          dir("environments/${params.ENVIRONMENT}") {
-            input message: "WARNING: This will DESTROY infra in ${params.ENVIRONMENT}. Proceed?", ok: "Destroy"
-            sh "terraform destroy -auto-approve -var-file=${params.ENVIRONMENT}.tfvars"
-          }
+          input message: "WARNING: This will DESTROY infra in ${params.ENVIRONMENT}. Proceed?", ok: "Destroy"
+          sh "terraform destroy -auto-approve -var-file=environments/${params.ENVIRONMENT}/${params.ENVIRONMENT}.tfvars"
         }
       }
     }
@@ -94,10 +93,10 @@ pipeline {
 
   post {
     success {
-      echo "Terraform ${params.ACTION} completed for ${params.ENVIRONMENT}."
+      echo "✅ Terraform ${params.ACTION} completed for ${params.ENVIRONMENT}."
     }
     failure {
-      echo "Terraform ${params.ACTION} failed for ${params.ENVIRONMENT}."
+      echo "❌ Terraform ${params.ACTION} failed for ${params.ENVIRONMENT}."
     }
   }
 }
