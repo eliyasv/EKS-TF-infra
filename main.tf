@@ -75,6 +75,17 @@ module "iam" {
   infra_enable_irsa              = var.infra_enable_irsa
 
   infra_oidc_url                 = module.eks.oidc_issuer_url
-  infra_oidc_thumbprint          = ""  # optionally pass thumbprint or use a data source
-  infra_irsa_policy_json         = ""  # custom IRSA policy if needed
+  infra_oidc_thumbprint          = "9e99a48a9960b14926bb7f3b02e22da0c17e46d0"  # optionally pass thumbprint or use a data source
+  infra_irsa_policy_json = jsonencode({
+  Version = "2012-10-17",
+  Statement = [
+    {
+      Effect = "Allow",
+      Action = [
+        "sts:AssumeRoleWithWebIdentity"
+      ],
+      Resource = "*"
+    }
+  ]
+})
 }
