@@ -26,6 +26,7 @@ resource "aws_eks_cluster" "ignite_cluster" {
   })
 }
 
+
 resource "aws_eks_addon" "ignite_addons" {
   for_each      = { for addon in var.infra_eks_addons : addon.name => addon }
   cluster_name  = aws_eks_cluster.ignite_cluster[0].name

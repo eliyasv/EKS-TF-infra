@@ -3,14 +3,19 @@ output "ignite_cluster_id" {
   description = "ID of the EKS cluster"
 }
 
-output "ignite_cluster_endpoint" {
-  value       = aws_eks_cluster.ignite_cluster[0].endpoint
-  description = "EKS cluster endpoint"
+output "ignite_cluster_name" {
+  description = "EKS cluster name"
+  value       = aws_eks_cluster.ignite_cluster[0].name
 }
 
 output "ignite_cluster_version" {
   value       = aws_eks_cluster.ignite_cluster[0].version
   description = "Kubernetes version"
+}
+
+output "ignite_cluster_endpoint" {
+  value       = aws_eks_cluster.ignite_cluster[0].endpoint
+  description = "EKS cluster endpoint"
 }
 
 output "ignite_nodegroup_ondemand_name" {
@@ -26,11 +31,6 @@ output "ignite_nodegroup_spot_name" {
 output "oidc_issuer_url" {
   description = "OIDC Issuer URL"
   value       = try(aws_eks_cluster.ignite_cluster[0].identity[0].oidc[0].issuer, null)
-}
-
-output "ignite_cluster_name" {
-  description = "EKS cluster name"
-  value       = aws_eks_cluster.ignite_cluster[0].name
 }
 
 output "private_subnet_ids" {

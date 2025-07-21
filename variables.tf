@@ -76,12 +76,6 @@ variable "infra_enable_node_iam_roles" {
   default     = true
 }
 
-variable "infra_enable_irsa" {
-  description = "Whether to enable IAM Roles for Service Accounts (IRSA)"
-  type        = bool
-  default     = true
-}
-
 # -----------------------------
 # EKS Module Inputs
 # -----------------------------
@@ -94,7 +88,7 @@ variable "infra_enable_eks" {
 variable "infra_cluster_version" {
   description = "EKS Kubernetes version"
   type        = string
-  default     = "1.32"
+  default     = "1.29"
 }
 
 variable "infra_enable_private_api" {

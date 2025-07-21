@@ -9,15 +9,14 @@
 module "vpc" {
   source = "./modules/vpc"
 
-  infra_environment         = var.infra_environment
-  infra_project_name        = var.infra_project_name
-  infra_cluster_name        = var.infra_cluster_name
-  infra_vpc_cidr            = var.infra_vpc_cidr
-  infra_public_subnet_cidrs = var.infra_public_subnet_cidrs
+  infra_environment          = var.infra_environment
+  infra_project_name         = var.infra_project_name
+  infra_cluster_name         = var.infra_cluster_name
+  infra_vpc_cidr             = var.infra_vpc_cidr
+  infra_public_subnet_cidrs  = var.infra_public_subnet_cidrs
   infra_private_subnet_cidrs = var.infra_private_subnet_cidrs
-  infra_subnet_azs                 = var.infra_subnet_azs
-
-  infra_tags = var.infra_tags
+  infra_subnet_azs           = var.infra_subnet_azs
+  infra_tags                 = var.infra_tags
 }
 
 # -----------------------------
@@ -54,10 +53,9 @@ module "eks" {
   infra_spot_desired_capacity = var.infra_spot_desired_capacity
   infra_spot_min_capacity     = var.infra_spot_min_capacity
   infra_spot_max_capacity     = var.infra_spot_max_capacity
+  infra_eks_addons            = var.infra_eks_addons
 
-  infra_eks_addons = var.infra_eks_addons
-
-  infra_tags = var.infra_tags
+  infra_tags                  = var.infra_tags
 }
 
 
@@ -72,20 +70,6 @@ module "iam" {
 
   infra_create_eks_cluster_role  = var.infra_enable_control_plane_iam
   infra_create_eks_nodegroup_role = var.infra_enable_node_iam_roles
-  infra_enable_irsa              = var.infra_enable_irsa
-
-  infra_oidc_url                 = module.eks.oidc_issuer_url
-  infra_oidc_thumbprint          = "9e99a48a9960b14926bb7f3b02e22da0c17e46d0"  # optionally pass thumbprint or use a data source
-  infra_irsa_policy_json = jsonencode({
-  Version = "2012-10-17",
-  Statement = [
-    {
-      Effect = "Allow",
-      Action = [
-        "sts:AssumeRoleWithWebIdentity"
-      ],
-      Resource = "*"
-    }
-  ]
-})
+  infra_oidc_url                   = module.eks.oidc_issuer_url
+  infra_oidc_thumbprint            = data.tls_certificate.oidc_thumbprint.certificates[0].sha1_fingerprint
 }

@@ -21,12 +21,6 @@ variable "infra_create_eks_nodegroup_role" {
   type        = bool
 }
 
-variable "infra_enable_irsa" {
-  description = "Enable IAM roles for service accounts (IRSA)"
-  type        = bool
-  default     = false
-}
-
 variable "infra_oidc_url" {
   description = "OIDC provider URL for EKS"
   type        = string
