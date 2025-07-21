@@ -43,16 +43,6 @@ output "eks_nodegroup_spot_name" {
   value       = var.infra_enable_spot_nodes ? module.eks.ignite_nodegroup_spot_name : null
 }
 
-output "eks_oidc_provider_url" {
-  description = "OIDC issuer URL for IRSA"
-  value       = var.infra_enable_irsa ? module.eks.oidc_issuer_url : null
-}
-
-output "eks_oidc_provider_arn" {
-  description = "OIDC provider ARN for IRSA"
-  value       = var.infra_enable_irsa ? module.iam.oidc_provider_arn : null
-}
-
 output "eks_control_plane_role_arn" {
   description = "IAM Role ARN for EKS control plane"
   value       = var.infra_enable_control_plane_iam ? module.iam.control_plane_iam_role_arn : null

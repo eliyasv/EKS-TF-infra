@@ -130,6 +130,18 @@ variable "infra_spot_max_capacity" {
   type        = number
 }
 
+variable "infra_oidc_url" {
+  description = "OIDC provider URL for EKS"
+  type        = string
+  default     = null
+}
+
+variable "infra_oidc_thumbprint" {
+  description = "OIDC provider thumbprint"
+  type        = string
+  default     = null
+}
+
 variable "infra_eks_addons" {
   description = "List of EKS add-ons"
   type = list(object({

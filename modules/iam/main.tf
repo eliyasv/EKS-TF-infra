@@ -55,8 +55,8 @@ resource "aws_iam_role_policy_attachment" "ignite_nodegroup_ebs_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
 
+# OIDC
 resource "aws_iam_openid_connect_provider" "ignite_eks_oidc_provider" {
-  count           = var.infra_enable_irsa ? 1 : 0
   url             = var.infra_oidc_url
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [var.infra_oidc_thumbprint]
@@ -67,10 +67,12 @@ resource "aws_iam_openid_connect_provider" "ignite_eks_oidc_provider" {
   }
 }
 
-resource "aws_iam_role" "ignite_irsa_role" {
-  count              = var.infra_enable_irsa ? 1 : 0
-  name               = "${var.infra_environment}-${var.infra_project_name}-irsa-role"
-  assume_role_policy = data.aws_iam_policy_document.infra_irsa_assume_policy[0].json
+
+# IRSA IAM Role (example usage for a specific sa in default namespace)
+resource "aws_iam_role" "ignite_eks_irsa_role" {
+  name = "${var.infra_environment}-${var.infra_project_name}-eks-irsa-role"
+
+  assume_role_policy = data.aws_iam_policy_document.eks_oidc_assume_role_policy.json
 
   tags = {
     Name        = "${var.infra_environment}-${var.infra_project_name}-irsa-role"
@@ -78,15 +80,24 @@ resource "aws_iam_role" "ignite_irsa_role" {
     Project     = var.infra_project_name
   }
 }
+resource "aws_iam_policy" "ignite-eks-oidc-policy" {
+  name = "test-policy"
 
-resource "aws_iam_policy" "ignite_irsa_policy" {
-  count  = var.infra_enable_irsa ? 1 : 0
-  name   = "${var.infra_environment}-${var.infra_project_name}-irsa-policy"
-  policy = var.infra_irsa_policy_json
+  policy = jsonencode({
+    Statement = [{
+      Action = [
+        "s3:ListAllMyBuckets",
+        "s3:GetBucketLocation",
+        "*"
+      ]
+      Effect   = "Allow"
+      Resource = "*"
+    }]
+    Version = "2012-10-17"
+  })
 }
 
-resource "aws_iam_role_policy_attachment" "ignite_irsa_policy_attach" {
-  count      = var.infra_enable_irsa ? 1 : 0
-  role       = aws_iam_role.ignite_irsa_role[0].name
-  policy_arn = aws_iam_policy.ignite_irsa_policy[0].arn
+resource "aws_iam_role_policy_attachment" "ignite-oidc-policy-attach" {
+  role       = aws_iam_role.ignite_eks_oidc.name
+  policy_arn = aws_iam_policy.ignite-eks-oidc-policy.arn
 }
