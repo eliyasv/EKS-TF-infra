@@ -166,8 +166,8 @@ Set up Jenkins with:
 | Module | Description                                                    |
 | ------ | -------------------------------------------------------------- |
 | `vpc/` | Creates VPC, public/private subnets, route tables, NAT gateway |
-| `iam/` | IAM roles for EKS control plane, node groups, and IRSA         |
-| `eks/` | EKS cluster, node groups (spot/on-demand), OIDC, add-ons       |
+| `iam/` | IAM roles for EKS control plane, node groups, OIDC and IRSA         |
+| `eks/` | EKS cluster, node groups (spot/on-demand), add-ons       |
 
 ---
 
