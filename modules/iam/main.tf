@@ -98,6 +98,6 @@ resource "aws_iam_policy" "ignite-eks-oidc-policy" {
 }
 
 resource "aws_iam_role_policy_attachment" "ignite-oidc-policy-attach" {
-  role       = aws_iam_role.ignite_eks_oidc.name
+  role       = aws_iam_role.ignite_eks_irsa_role.name
   policy_arn = aws_iam_policy.ignite-eks-oidc-policy.arn
 }

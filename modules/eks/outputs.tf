@@ -1,30 +1,30 @@
 output "ignite_cluster_id" {
-  value       = aws_eks_cluster.ignite_cluster[0].id
+  value       = try(aws_eks_cluster.ignite_cluster[0].id, null)
   description = "ID of the EKS cluster"
 }
 
 output "ignite_cluster_name" {
   description = "EKS cluster name"
-  value       = aws_eks_cluster.ignite_cluster[0].name
+  value       = try(aws_eks_cluster.ignite_cluster[0].name, null)
 }
 
 output "ignite_cluster_version" {
-  value       = aws_eks_cluster.ignite_cluster[0].version
+  value       = try(aws_eks_cluster.ignite_cluster[0].version, null)
   description = "Kubernetes version"
 }
 
 output "ignite_cluster_endpoint" {
-  value       = aws_eks_cluster.ignite_cluster[0].endpoint
+  value       = try(aws_eks_cluster.ignite_cluster[0].endpoint, null)
   description = "EKS cluster endpoint"
 }
 
 output "ignite_nodegroup_ondemand_name" {
-  value       = aws_eks_node_group.ignite_ondemand_nodes[0].node_group_name
+  value       = try(aws_eks_node_group.ignite_ondemand_nodes[0].node_group_name, null)
   description = "Name of the on-demand node group"
 }
 
 output "ignite_nodegroup_spot_name" {
-  value       = aws_eks_node_group.ignite_spot_nodes[0].node_group_name
+  value       = try(aws_eks_node_group.ignite_spot_nodes[0].node_group_name, null)
   description = "Name of the spot node group"
 }
 

@@ -28,12 +28,11 @@ resource "aws_eks_cluster" "ignite_cluster" {
 
 
 resource "aws_eks_addon" "ignite_addons" {
-  for_each      = { for addon in var.infra_eks_addons : addon.name => addon }
-  cluster_name  = aws_eks_cluster.ignite_cluster[0].name
+  for_each = var.infra_eks_addons != null ? { for addon in var.infra_eks_addons : addon.name => addon } : {}
+  cluster_name  = try(aws_eks_cluster.ignite_cluster[0].name, null)
   addon_name    = each.value.name
   addon_version = each.value.version
-
-  depends_on = [aws_eks_cluster.ignite_cluster]
+  depends_on    = [aws_eks_cluster.ignite_cluster]
 }
 
 resource "aws_eks_node_group" "ignite_ondemand_nodes" {

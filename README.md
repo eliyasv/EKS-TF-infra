@@ -34,6 +34,7 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 │       ├── outputs.tf
 │       └── variables.tf
 ├── outputs.tf
+├── data.tf
 ├── providers.tf
 ├── README.md
 └── variables.tf
@@ -166,7 +167,7 @@ Set up Jenkins with:
 | Module | Description                                                    |
 | ------ | -------------------------------------------------------------- |
 | `vpc/` | Creates VPC, public/private subnets, route tables, NAT gateway |
-| `iam/` | IAM roles for EKS control plane, node groups, OIDC and IRSA         |
+| `iam/` | IAM roles for EKS control plane, node groups, OIDC         |
 | `eks/` | EKS cluster, node groups (spot/on-demand), add-ons       |
 
 ---
