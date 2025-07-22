@@ -28,7 +28,7 @@ module "eks" {
   infra_environment  = var.infra_environment
   infra_project_name = var.infra_project_name
 
-  infra_cluster_name    = "${var.infra_project_name}-${var.infra_environment}-eks"
+  infra_cluster_name    = var.infra_cluster_name
   infra_cluster_version = var.infra_cluster_version
 
   infra_enable_eks         = var.infra_enable_eks

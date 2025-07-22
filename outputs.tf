@@ -20,6 +20,11 @@ output "private_subnet_ids" {
 
 output "eks_cluster_name" {
   description = "EKS cluster name"
+  value       = var.infra_enable_eks ? module.eks.ignite_cluster_name : null
+}
+
+output "eks_cluster_id" {
+  description = "EKS cluster ID"
   value       = var.infra_enable_eks ? module.eks.ignite_cluster_id : null
 }
 
