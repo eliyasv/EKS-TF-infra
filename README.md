@@ -157,7 +157,7 @@ This project includes a `Jenkinsfile` for automating:
 Set up Jenkins with:
 
 * GitHub integration
-* AWS credentials via environment or credentials plugin
+* AWS credentials via credentials plugin
 * Terraform CLI installed
 
 ---
