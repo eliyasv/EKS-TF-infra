@@ -96,7 +96,7 @@ infra_region            = "us-east-1"
 infra_vpc_cidr          = "10.10.0.0/16"
 infra_cluster_name      = "dev-project-ignite-cluster"
 infra_enable_eks        = true
-infra_eks_version       = "1.32"
+infra_eks_version       = "1.30"
 ...
 ```
 
