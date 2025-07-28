@@ -33,7 +33,6 @@ infra_spot_max_capacity     = 5
 # IAM Role Flags
 infra_enable_control_plane_iam = true
 infra_enable_node_iam_roles    = true
-infra_enable_irsa              = true
 
 # EKS Add-ons
 infra_eks_addons = [
