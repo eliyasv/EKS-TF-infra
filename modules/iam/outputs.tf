@@ -3,7 +3,7 @@
 
 output "oidc_provider_arn" {
   description = "OIDC provider ARN for IRSA"
-  value       = try(aws_iam_openid_connect_provider.ignite_eks_oidc_provider[0].arn, null)
+  value       = try(aws_iam_openid_connect_provider.ignite_eks_oidc_provider.arn, null)
 }
 
 output "control_plane_iam_role_arn" {
