@@ -32,9 +32,3 @@ variable "infra_oidc_thumbprint" {
   type        = string
   default     = null
 }
-
-variable "infra_irsa_policy_json" {
-  description = "JSON IAM policy for IRSA role"
-  type        = string
-  default     = null
-}
