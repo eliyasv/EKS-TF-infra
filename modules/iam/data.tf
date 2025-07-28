@@ -20,6 +20,7 @@ data "aws_iam_policy_document" "infra_ec2_assume_role_policy" {
   }
 }
 
+#Allows federated access by the EKS cluster’s OIDC provider, limited to a specific Kubernetes service account.
 data "aws_iam_policy_document" "eks_oidc_assume_role_policy" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
