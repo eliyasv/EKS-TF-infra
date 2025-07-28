@@ -1,6 +1,6 @@
 ## 🚀 EKS Infrastructure with Terraform
 
-This repository provisions an **Amazon EKS cluster** designed for scalability, reusability, and DevOps automation best practices. (WIP)
+This repository provisions an **Amazon EKS cluster** designed for scalability, reusability, and DevOps automation best practices.
 
 ---
 
@@ -54,7 +54,7 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 * ✅ Configurable EKS add-ons (`vpc-cni`, `CoreDNS`, `kube-proxy`, `EBS CSI`)
 * ✅ Separate environments (`dev`, `prod`)
 * ✅ GitHub + Jenkins CI ready
-* ✅ Remote S3 backend with state locking via DynamoDB
+* ✅ Remote S3 backend with state locking via DynamoDB for Terraform state management
 
 ---
 
@@ -63,7 +63,7 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 * Terraform CLI
 * AWS credentials with appropriate IAM permissions
 * S3 bucket + DynamoDB table for remote state storing
-* Jenkins agent (for CI/CD)
+* Jenkins server configured (for all relevant CI/CD jobs.)
 
 ---
 
@@ -128,6 +128,21 @@ terraform plan -var-file=environments/dev/dev.tfvars -out=tfplan-dev
 # Apply for dev
 terraform apply tfplan-dev
 
+```
+
+This Terraform configuration deploys a production-ready EKS cluster named ignite-cluster-dev in the us-east-1 region. It includes:
+
+* An EKS cluster running Kubernetes version 1.30
+* Node groups using both On-demand and Spot EC2 instances with autoscaling capability
+* EKS managed addons: coredns, kube-proxy, vpc-cni, and aws-ebs-csi-driver
+* AWS Identity and Access Management (IAM) roles and policies, including OpenID Connect (OIDC) provider for IAM Roles for Service Accounts (IRSA)
+* Virtual Private Cloud (VPC) with public and private subnets across multiple Availability Zones
+* NAT gateway and Internet Gateway for routing internet traffic
+* Route tables for public and private subnet routing
+* Security Groups configured for public HTTP/HTTPS access
+
+
+```bash
 
 # Destroy dev
 terraform destroy -var-file=environments/dev/dev.tfvars
@@ -144,6 +159,7 @@ terraform plan -var-file=environments/prod/prod.tfvars -out=tfplan-prod
 terraform apply tfplan-prod
 
 ```
+
 ---
 
 ### 🛠️ CI/CD with Jenkins
@@ -172,13 +188,3 @@ Set up Jenkins with:
 
 ---
 
-### 📦 Outputs
-
-After `apply`, Terraform will output:
-
-* EKS Cluster Name
-* EKS Endpoint
-* Node Group info
-* VPC & Subnet IDs
-
----
