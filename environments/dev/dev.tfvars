@@ -47,10 +47,10 @@ infra_eks_addons = [
   },
   {
     name    = "kube-proxy"
-    version = "v1.31.3-eksbuild.2"
+    version = "v1.29.15-eksbuild.2"
   },
   {
     name    = "aws-ebs-csi-driver"
-    version = "v1.38.1-eksbuild.1"
+    version = "v1.29.1-eksbuild.1"
   }
 ]
