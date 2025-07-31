@@ -4,7 +4,16 @@
 resource "aws_iam_role" "ignite_eks_cluster_role" {
   count              = var.infra_create_eks_cluster_role ? 1 : 0
   name               = "${var.infra_environment}-${var.infra_project_name}-eks-cluster-role"
-  assume_role_policy = data.aws_iam_policy_document.infra_eks_assume_role_policy.json
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "eks.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
 
   tags = {
     Name        = "${var.infra_environment}-${var.infra_project_name}-eks-cluster-role"
@@ -22,7 +31,16 @@ resource "aws_iam_role_policy_attachment" "ignite_eks_cluster_policy" {
 resource "aws_iam_role" "ignite_eks_nodegroup_role" {
   count              = var.infra_create_eks_nodegroup_role ? 1 : 0
   name               = "${var.infra_environment}-${var.infra_project_name}-eks-nodegroup-role"
-  assume_role_policy = data.aws_iam_policy_document.infra_ec2_assume_role_policy.json
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+    }]
+  })
 
   tags = {
     Name        = "${var.infra_environment}-${var.infra_project_name}-eks-nodegroup-role"
