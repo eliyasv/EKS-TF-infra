@@ -1,25 +1,3 @@
-# Trust policy for EKS control plane
-data "aws_iam_policy_document" "infra_eks_assume_role_policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["eks.amazonaws.com"]
-    }
-  }
-}
-
-# Trust policy for EC2 node groups (EKS workers)
-data "aws_iam_policy_document" "infra_ec2_assume_role_policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-  }
-}
-
 #Allows federated access by the EKS cluster’s OIDC provider, limited to a specific Kubernetes service account.
 data "aws_iam_policy_document" "eks_oidc_assume_role_policy" {
   statement {
