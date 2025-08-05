@@ -10,7 +10,7 @@ resource "aws_eks_cluster" "ignite_cluster" {
   version  = var.infra_cluster_version
 
   vpc_config {
-    subnet_ids              = var.private_subnet_ids
+    subnet_ids              = var.public_subnet_ids
     endpoint_private_access = var.infra_enable_private_api
     endpoint_public_access  = var.infra_enable_public_api
   }
@@ -41,7 +41,7 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
   node_group_name = "${var.infra_cluster_name}-ondemand"
 
   node_role_arn = var.node_group_iam_role_arn
-  subnet_ids    = var.private_subnet_ids
+  subnet_ids    = var.public_subnet_ids
 
   scaling_config {
     desired_size = var.infra_ondemand_desired_capacity
@@ -73,7 +73,7 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
   node_group_name = "${var.infra_cluster_name}-spot"
 
   node_role_arn = var.node_group_iam_role_arn
-  subnet_ids    = var.private_subnet_ids
+  subnet_ids    = var.public_subnet_ids
 
   scaling_config {
     desired_size = var.infra_spot_desired_capacity

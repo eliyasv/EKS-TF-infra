@@ -3,7 +3,7 @@
 # ------------------------
 resource "aws_iam_role" "ignite_eks_cluster_role" {
   count              = var.infra_create_eks_cluster_role ? 1 : 0
-  name               = "${var.infra_environment}-${var.infra_project_name}-eks-cluster-role"
+  name               = "${var.infra_cluster_name}-eks-cluster-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -16,7 +16,7 @@ resource "aws_iam_role" "ignite_eks_cluster_role" {
   })
 
   tags = {
-    Name        = "${var.infra_environment}-${var.infra_project_name}-eks-cluster-role"
+    Name        = "${var.infra_cluster_name}-eks-cluster-role"
     Environment = var.infra_environment
     Project     = var.infra_project_name
   }
@@ -30,7 +30,7 @@ resource "aws_iam_role_policy_attachment" "ignite_eks_cluster_policy" {
 
 resource "aws_iam_role" "ignite_eks_nodegroup_role" {
   count              = var.infra_create_eks_nodegroup_role ? 1 : 0
-  name               = "${var.infra_environment}-${var.infra_project_name}-eks-nodegroup-role"
+  name               = "${var.infra_cluster_name}-eks-nodegroup-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -43,7 +43,7 @@ resource "aws_iam_role" "ignite_eks_nodegroup_role" {
   })
 
   tags = {
-    Name        = "${var.infra_environment}-${var.infra_project_name}-eks-nodegroup-role"
+    Name        = "${var.infra_cluster_name}-eks-nodegroup-role"
     Environment = var.infra_environment
     Project     = var.infra_project_name
   }
@@ -88,12 +88,12 @@ resource "aws_iam_openid_connect_provider" "ignite_eks_oidc_provider" {
 
 # IRSA IAM Role (example usage for a specific sa in default namespace)
 resource "aws_iam_role" "ignite_eks_irsa_role" {
-  name = "${var.infra_environment}-${var.infra_project_name}-eks-irsa-role"
+  name = "${var.infra_cluster_name}-eks-irsa-role"
 
   assume_role_policy = data.aws_iam_policy_document.eks_oidc_assume_role_policy.json
 
   tags = {
-    Name        = "${var.infra_environment}-${var.infra_project_name}-irsa-role"
+    Name        = "${var.infra_cluster_name}-irsa-role"
     Environment = var.infra_environment
     Project     = var.infra_project_name
   }

@@ -1,6 +1,12 @@
 # ------------------------
 # modules/iam/variables.tf
 # ------------------------
+
+variable "infra_cluster_name" {
+  description = "EKS cluster name"
+  type        = string
+}
+
 variable "infra_environment" {
   description = "Environment name (e.g., dev, prod)"
   type        = string
