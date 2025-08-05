@@ -107,18 +107,10 @@ resource "aws_route_table_association" "infra_private_rt_assoc" {
   route_table_id = aws_route_table.infra_private_rt.id
 }
 
-resource "aws_security_group" "infra_public_sg" {
-  name        = "${var.infra_environment}-${var.infra_project_name}-public-sg"
-  description = "Allow HTTP/HTTPS access from the internet"
+resource "aws_security_group" "infra_eks_sg" {
+  name        = "${var.infra_environment}-${var.infra_project_name}-eks-sg"
+  description = "Allow access from the jumpserver"
   vpc_id      = aws_vpc.infra_vpc.id
-
-  ingress {
-    description = "Allow HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   ingress {
     description = "Allow HTTPS"
@@ -137,6 +129,7 @@ resource "aws_security_group" "infra_public_sg" {
   }
 
   tags = merge(var.infra_tags, {
-    Name = "${var.infra_environment}-${var.infra_project_name}-public-sg"
+    Name = "${var.infra_environment}-${var.infra_project_name}-eks-sg"
   })
 }
+
