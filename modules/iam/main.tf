@@ -1,6 +1,7 @@
 # ------------------------
 # modules/iam/main.tf
 # ------------------------
+
 resource "aws_iam_role" "ignite_eks_cluster_role" {
   count              = var.infra_create_eks_cluster_role ? 1 : 0
   name               = "${var.infra_cluster_name}-eks-cluster-role"
@@ -86,18 +87,18 @@ resource "aws_iam_openid_connect_provider" "ignite_eks_oidc_provider" {
 }
 
 
-# IRSA IAM Role (example usage for a specific sa in default namespace)
-resource "aws_iam_role" "ignite_eks_irsa_role" {
-  name = "${var.infra_cluster_name}-eks-irsa-role"
+# # IRSA IAM Role (example usage for a specific sa in default namespace)
+# resource "aws_iam_role" "ignite_eks_irsa_role" {
+#   name = "${var.infra_cluster_name}-eks-irsa-role"
 
-  assume_role_policy = data.aws_iam_policy_document.eks_oidc_assume_role_policy.json
+#   assume_role_policy = data.aws_iam_policy_document.eks_oidc_assume_role_policy.json
 
-  tags = {
-    Name        = "${var.infra_cluster_name}-irsa-role"
-    Environment = var.infra_environment
-    Project     = var.infra_project_name
-  }
-}
+#   tags = {
+#     Name        = "${var.infra_cluster_name}-irsa-role"
+#     Environment = var.infra_environment
+#     Project     = var.infra_project_name
+#   }
+# }
 resource "aws_iam_policy" "ignite-eks-oidc-policy" {
   name = "test-policy"
 

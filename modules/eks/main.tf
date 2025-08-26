@@ -10,13 +10,13 @@ resource "aws_eks_cluster" "ignite_cluster" {
   version  = var.infra_cluster_version
 
   vpc_config {
-    subnet_ids              = var.public_subnet_ids
+    subnet_ids              = var.public_subnet_ids #two subnets that are in different azs are sugested.
     endpoint_private_access = var.infra_enable_private_api
     endpoint_public_access  = var.infra_enable_public_api
   }
 
   access_config {
-    authentication_mode                         = "CONFIG_MAP"
+    authentication_mode                         = "API"
     bootstrap_cluster_creator_admin_permissions = true
   }
 
@@ -24,16 +24,9 @@ resource "aws_eks_cluster" "ignite_cluster" {
     Name = var.infra_cluster_name
     Env  = var.infra_environment
   })
-}
 
-
-resource "aws_eks_addon" "ignite_addons" {
-  for_each = var.infra_eks_addons != null ? { for addon in var.infra_eks_addons : addon.name => addon } : {}
-  cluster_name  = try(aws_eks_cluster.ignite_cluster[0].name, null)
-  addon_name    = each.value.name
-  addon_version = each.value.version
-  depends_on    = [aws_eks_cluster.ignite_cluster]
-}
+  depends_on = [aws_iam_role_policy_attachment.ignite_eks_cluster_policy]
+  }
 
 resource "aws_eks_node_group" "ignite_ondemand_nodes" {
   count           = var.infra_enable_ondemand_nodes ? 1 : 0
@@ -41,7 +34,7 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
   node_group_name = "${var.infra_cluster_name}-ondemand"
 
   node_role_arn = var.node_group_iam_role_arn
-  subnet_ids    = var.public_subnet_ids
+  subnet_ids    = var.private_subnet_ids
 
   scaling_config {
     desired_size = var.infra_ondemand_desired_capacity
@@ -64,7 +57,12 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
     Name = "${var.infra_cluster_name}-ondemand"
   })
 
-  depends_on = [aws_eks_cluster.ignite_cluster]
+  depends_on = [
+    aws_iam_role_policy_attachment.ignite_nodegroup_worker_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_cni_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_registry_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_ebs_policy,
+   ]
 }
 
 resource "aws_eks_node_group" "ignite_spot_nodes" {
@@ -73,7 +71,7 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
   node_group_name = "${var.infra_cluster_name}-spot"
 
   node_role_arn = var.node_group_iam_role_arn
-  subnet_ids    = var.public_subnet_ids
+  subnet_ids    = var.private_subnet_ids
 
   scaling_config {
     desired_size = var.infra_spot_desired_capacity
@@ -98,5 +96,21 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
     Name = "${var.infra_cluster_name}-spot"
   })
 
-  depends_on = [aws_eks_cluster.ignite_cluster]
+  depends_on = [
+    aws_iam_role_policy_attachment.ignite_nodegroup_worker_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_cni_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_registry_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_ebs_policy,
+   ]
+}
+
+resource "aws_eks_addon" "ignite_addons" {
+  for_each = var.infra_eks_addons != null ? { for addon in var.infra_eks_addons : addon.name => addon } : {}
+  cluster_name  = try(aws_eks_cluster.ignite_cluster[0].name, null)
+  addon_name    = each.value.name
+  addon_version = each.value.version
+  depends_on    = [
+    aws_eks_node_group.ignite_ondemand_nodes,
+    aws_eks_node_group.ignite_spot_nodes
+  ]
 }
