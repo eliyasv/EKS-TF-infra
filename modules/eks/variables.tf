@@ -41,14 +41,14 @@ variable "infra_enable_eks" {
   default     = true
 }
 
-variable "infra_enable_private_api" {
-  description = "Enable private API access"
+variable "infra_enable_private_access" {
+  description = "Enable private access"
   type        = bool
   default     = true
 }
 
-variable "infra_enable_public_api" {
-  description = "Enable public API access"
+variable "infra_enable_public_access" {
+  description = "Enable public access"
   type        = bool
   default     = false
 }
