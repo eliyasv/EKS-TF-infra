@@ -53,7 +53,7 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 * ✅ OIDC/IRSA enabled for Kubernetes IAM
 * ✅ Configurable EKS add-ons (`vpc-cni`, `CoreDNS`, `kube-proxy`, `EBS CSI`)
 * ✅ Separate environments (`dev`, `prod`)
-* ✅ GitHub + Jenkins CI ready
+* ✅ GitHub + Jenkins CI ready 
 * ✅ Remote S3 backend with state locking via DynamoDB for Terraform state management
 
 ---
@@ -63,7 +63,7 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 * Terraform CLI
 * AWS credentials with appropriate IAM permissions
 * S3 bucket + DynamoDB table for remote state storing
-* Jenkins server configured (for all relevant CI/CD jobs.)
+* Jenkins server configured with docker, terraform  plugins and credentials (for all relevant CI/CD jobs.) 
 
 ---
 
@@ -170,11 +170,6 @@ This project includes a `Jenkinsfile` for automating:
 * Environment selection (`dev`, `prod`)
 * Safe apply/destroy with approval gates
 
-Set up Jenkins with:
-
-* GitHub integration
-* AWS credentials via credentials plugin
-* Terraform CLI installed
 
 ---
 
@@ -182,9 +177,9 @@ Set up Jenkins with:
 
 | Module | Description                                                    |
 | ------ | -------------------------------------------------------------- |
-| `vpc/` | Creates VPC, public/private subnets, route tables, NAT gateway |
-| `iam/` | IAM roles for EKS control plane, node groups, OIDC         |
-| `eks/` | EKS cluster, node groups (spot/on-demand), add-ons       |
+| `vpc/` | Creates VPC, public/private subnets, route tables, NAT gateway, internet gateway, elastic IP, security group|
+| `iam/` | Creates IAM roles for EKS control plane, node groups, OIDC IRSA iam role |
+| `eks/` | Creates EKS cluster, node groups (spot/on-demand), add-ons |
 
 ---
 
