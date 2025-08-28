@@ -91,14 +91,14 @@ variable "infra_cluster_version" {
   default     = "1.29"
 }
 
-variable "infra_enable_private_api" {
-  description = "Enable private API access to EKS control plane"
+variable "infra_enable_private_access" {
+  description = "Enable private API access to EKS control plane endpoint"
   type        = bool
   default     = true
 }
 
-variable "infra_enable_public_api" {
-  description = "Enable public API access to EKS control plane"
+variable "infra_enable_public_access" {
+  description = "Enable public API access to EKS control plane endpoint"
   type        = bool
   default     = false
 }

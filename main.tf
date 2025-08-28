@@ -32,8 +32,8 @@ module "eks" {
   infra_cluster_version = var.infra_cluster_version
 
   infra_enable_eks         = var.infra_enable_eks
-  infra_enable_private_api = var.infra_enable_private_api
-  infra_enable_public_api  = var.infra_enable_public_api
+  infra_enable_private_access = var.infra_enable_private_access
+  infra_enable_public_access = var.infra_enable_public_access
 
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnet_ids
@@ -64,12 +64,13 @@ module "eks" {
 # -----------------------------
 module "iam" {
   source = "./modules/iam"
-
+  
+  infra_cluster_name             = var.infra_cluster_name
   infra_environment              = var.infra_environment
   infra_project_name             = var.infra_project_name
 
-  infra_create_eks_cluster_role  = var.infra_enable_control_plane_iam
+  infra_create_eks_cluster_role   = var.infra_enable_control_plane_iam
   infra_create_eks_nodegroup_role = var.infra_enable_node_iam_roles
-  infra_oidc_url                   = module.eks.oidc_issuer_url
-  infra_oidc_thumbprint            = data.tls_certificate.oidc_thumbprint.certificates[0].sha1_fingerprint
+  infra_oidc_url                  = module.eks.oidc_issuer_url
+  infra_oidc_thumbprint           = data.tls_certificate.oidc_thumbprint.certificates[0].sha1_fingerprint
 }
