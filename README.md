@@ -46,13 +46,13 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 
 ### 🧠 Features
 
+* ✅ Separate environments (`dev`, `prod`)
 * ✅ Modular Terraform structure (`vpc`, `iam`, `eks`)
 * ✅ Public/private subnets with NAT Gateway
 * ✅ Spot and On-Demand node groups
 * ✅ Secure EKS cluster (private API access)
 * ✅ OIDC/IRSA enabled for Kubernetes IAM
-* ✅ Configurable EKS add-ons (`vpc-cni`, `CoreDNS`, `kube-proxy`, `EBS CSI`)
-* ✅ Separate environments (`dev`, `prod`)
+* ✅ Configurable EKS add-ons
 * ✅ GitHub + Jenkins CI ready 
 * ✅ Remote S3 backend with state locking via DynamoDB for Terraform state management
 
@@ -61,7 +61,7 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 ### 🔧 Prerequisites
 
 * Terraform CLI
-* AWS credentials with appropriate IAM permissions
+* AWS IAM user with appropriate permissions
 * S3 bucket + DynamoDB table for remote state storing
 * Jenkins server configured with docker, terraform  plugins and credentials (for all relevant CI/CD jobs.) 
 
@@ -139,7 +139,6 @@ This Terraform configuration deploys a production-ready EKS cluster named ignite
 * Virtual Private Cloud (VPC) with public and private subnets across multiple Availability Zones
 * NAT gateway and Internet Gateway for routing internet traffic
 * Route tables for public and private subnet routing
-* Security Groups configured for public HTTP/HTTPS access
 
 
 ```bash
@@ -178,7 +177,7 @@ This project includes a `Jenkinsfile` for automating:
 | Module | Description                                                    |
 | ------ | -------------------------------------------------------------- |
 | `vpc/` | Creates VPC, public/private subnets, route tables, NAT gateway, internet gateway, elastic IP, security group|
-| `iam/` | Creates IAM roles for EKS control plane, node groups, OIDC IRSA iam role |
+| `iam/` | Creates IAM roles and attach policies for EKS control plane, node groups, OIDC IRSA iam role |
 | `eks/` | Creates EKS cluster, node groups (spot/on-demand), add-ons |
 
 ---

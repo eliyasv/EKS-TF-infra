@@ -5,7 +5,7 @@
 # Create the EKS Cluster
 
 resource "aws_eks_cluster" "ignite_cluster" {
-  # Count condition - creates the cluster only if enabled by variable
+  # Condition - creates the cluster only if enabled by variable (can be used for testing with eks dissabled)
   count    = var.infra_enable_eks ? 1 : 0
 
   # Name of the EKS cluster (comes from variable, which is fed from dev/env)
@@ -19,15 +19,15 @@ resource "aws_eks_cluster" "ignite_cluster" {
 
   # Networking configuration for the cluster
   vpc_config {
-    subnet_ids              = var.private_subnet_ids # subnets from different AZs recomended
-    endpoint_private_access = var.infra_enable_private_access # private  endpoint
-    endpoint_public_access  = var.infra_enable_public_access  # public  endpoint
+    subnet_ids              = var.private_subnet_ids # subnets from atleast 2 different AZs recomended
+    endpoint_private_access = var.infra_enable_private_access # private  endpoint (false)
+    endpoint_public_access  = var.infra_enable_public_access  # public  endpoint (true)
   }
 
   # Cluster access configuration
   access_config {
-    authentication_mode                         = "API"  # Enables IAM authentication
-    bootstrap_cluster_creator_admin_permissions = true   # Grants admin permissions to creator
+    authentication_mode                         = "API"  # Enables IAM authentication (instead of ConfigMap)
+    bootstrap_cluster_creator_admin_permissions = true   # Grants admin permissions to creator of cluster
   }
 
   # Tags for better resource management
@@ -46,7 +46,7 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
   cluster_name    = aws_eks_cluster.ignite_cluster[0].name 
   node_group_name = "${var.infra_cluster_name}-ondemand"
 
-  # IAM role for worker nodes (allows them to talk to other AWS services)
+  # IAM role for worker nodes, fed from the output of iam module. 
   node_role_arn = var.node_group_iam_role_arn
 
   # Place node instances in private subnets (best practice for security)
@@ -85,9 +85,14 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
     aws_iam_role_policy_attachment.ignite_nodegroup_registry_policy,
     aws_iam_role_policy_attachment.ignite_nodegroup_ebs_policy,
   ]
+
+# incase if we need to ignore the desired size atribute to avoid conflicts with cluster auto scaler after creating 
+  lifecycle {
+    ignore_changes = [scaling_config.desired_size]
+  }
 }
 
-# Node Group: Spot Instances
+# Node Group: Spot Instances(scalable pool for non-critical or burst workloads)
 
 resource "aws_eks_node_group" "ignite_spot_nodes" {
   count           = var.infra_enable_spot_nodes ? 1 : 0
@@ -98,7 +103,7 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
   subnet_ids    = var.private_subnet_ids
 
   scaling_config {
-    desired_size = var.infra_spot_desired_capacity
+    desired_size = var.infra_spot_desired_capacity 
     min_size     = var.infra_spot_min_capacity
     max_size     = var.infra_spot_max_capacity
   }
@@ -128,6 +133,11 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
     aws_iam_role_policy_attachment.ignite_nodegroup_registry_policy,
     aws_iam_role_policy_attachment.ignite_nodegroup_ebs_policy,
   ]
+
+   lifecycle {
+    ignore_changes = [scaling_config.desired_size]
+  }
+
 }
 
 # EKS Addons

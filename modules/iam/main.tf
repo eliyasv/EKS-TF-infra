@@ -59,14 +59,14 @@ resource "aws_iam_role" "ignite_eks_nodegroup_role" {
 
 # Attach necessary policies to worker node IAM role
 
-# AmazonEKSWorkerNodePolicy - Essential permissions for EKS nodes
+# AmazonEKSWorkerNodePolicy - Essential permissions for EKS worker nodes
 resource "aws_iam_role_policy_attachment" "ignite_nodegroup_worker_policy" {
   count      = var.infra_create_eks_nodegroup_role ? 1 : 0
   role       = aws_iam_role.ignite_eks_nodegroup_role[0].name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
 }
 
-#  AmazonEKS_CNI_Policy - Required for VPC networking from within pods
+#  AmazonEKS_CNI_Policy - Required for VPC networking from within pods (grant eks, access to modify ip adress configuration on worker nodes)
 resource "aws_iam_role_policy_attachment" "ignite_nodegroup_cni_policy" {
   count      = var.infra_create_eks_nodegroup_role ? 1 : 0
   role       = aws_iam_role.ignite_eks_nodegroup_role[0].name
