@@ -19,6 +19,22 @@ module "vpc" {
   infra_tags                 = var.infra_tags
 }
 
+# IAM pre: control-plane + nodegroup roles only (no OIDC/IRSA)
+module "iam_pre" {
+  source = "./modules/iam"
+
+  infra_environment               = var.infra_environment
+  infra_project_name              = var.infra_project_name
+  infra_cluster_name              = var.infra_cluster_name
+
+  infra_create_eks_cluster_role   = var.infra_enable_control_plane_iam
+  infra_create_eks_nodegroup_role = var.infra_enable_node_iam_roles
+
+  # Leave OIDC inputs null so OIDC/IRSA resources are skipped in this pass
+  infra_oidc_url        = null
+  infra_oidc_thumbprint = null
+}
+
 # -----------------------------
 # EKS Module
 # -----------------------------
@@ -39,8 +55,8 @@ module "eks" {
   private_subnet_ids = module.vpc.private_subnet_ids
   public_subnet_ids  = module.vpc.public_subnet_ids
 
-  control_plane_iam_role_arn = module.iam.control_plane_iam_role_arn
-  node_group_iam_role_arn    = module.iam.node_group_iam_role_arn
+  control_plane_iam_role_arn = module.iam_pre.control_plane_iam_role_arn
+  node_group_iam_role_arn    = module.iam_pre.node_group_iam_role_arn
 
   infra_enable_ondemand_nodes     = var.infra_enable_ondemand_nodes
   infra_ondemand_instance_types   = var.infra_ondemand_instance_types
@@ -59,18 +75,22 @@ module "eks" {
 }
 
 
-# -----------------------------
-# IAM Module
-# -----------------------------
-module "iam" {
-  source = "./modules/iam"
-  
-  infra_cluster_name             = var.infra_cluster_name
-  infra_environment              = var.infra_environment
-  infra_project_name             = var.infra_project_name
 
-  infra_create_eks_cluster_role   = var.infra_enable_control_plane_iam
-  infra_create_eks_nodegroup_role = var.infra_enable_node_iam_roles
-  infra_oidc_url                  = module.eks.oidc_issuer_url
-  infra_oidc_thumbprint           = data.tls_certificate.oidc_thumbprint.certificates[0].sha1_fingerprint
+# IAM IRSA: create OIDC provider + IRSA roles once URL/thumbprint exist
+module "iam_irsa" {
+  source = "./modules/iam"
+
+  infra_environment  = var.infra_environment
+  infra_project_name = var.infra_project_name
+  infra_cluster_name = var.infra_cluster_name
+
+  # Do not recreate roles; this pass only does OIDC/IRSA
+  infra_create_eks_cluster_role   = false
+  infra_create_eks_nodegroup_role = false
+
+  infra_oidc_url        = module.eks.oidc_issuer_url
+  infra_oidc_thumbprint = data.tls_certificate.oidc_thumbprint.certificates[0].sha1_fingerprint
+
+  # Make sure IRSA runs after cluster
+  depends_on = [module.eks]
 }

@@ -37,7 +37,7 @@ resource "aws_eks_cluster" "ignite_cluster" {
   })
 
   # Ensure IAM policies for the cluster are attached before creation
-  depends_on = [aws_iam_role_policy_attachment.ignite_eks_cluster_policy]
+
 }
 
 # Node Group: On-Demand Instances
@@ -79,12 +79,7 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
   })
 
   # Ensure IAM policies for worker functionality are attached first
-  depends_on = [
-    aws_iam_role_policy_attachment.ignite_nodegroup_worker_policy,
-    aws_iam_role_policy_attachment.ignite_nodegroup_cni_policy,
-    aws_iam_role_policy_attachment.ignite_nodegroup_registry_policy,
-    aws_iam_role_policy_attachment.ignite_nodegroup_ebs_policy,
-  ]
+  
 }
 
 # Node Group: Spot Instances
@@ -122,12 +117,7 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
     Name = "${var.infra_cluster_name}-spot"
   })
 
-  depends_on = [
-    aws_iam_role_policy_attachment.ignite_nodegroup_worker_policy,
-    aws_iam_role_policy_attachment.ignite_nodegroup_cni_policy,
-    aws_iam_role_policy_attachment.ignite_nodegroup_registry_policy,
-    aws_iam_role_policy_attachment.ignite_nodegroup_ebs_policy,
-  ]
+
 }
 
 # EKS Addons

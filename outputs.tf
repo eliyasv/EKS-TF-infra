@@ -50,10 +50,10 @@ output "eks_nodegroup_spot_name" {
 
 output "eks_control_plane_role_arn" {
   description = "IAM Role ARN for EKS control plane"
-  value       = var.infra_enable_control_plane_iam ? module.iam.control_plane_iam_role_arn : null
+  value       = var.infra_enable_control_plane_iam ? module.iam_pre.control_plane_iam_role_arn : null
 }
 
 output "eks_node_group_role_arn" {
   description = "IAM Role ARN for EKS node group"
-  value       = var.infra_enable_node_iam_roles ? module.iam.node_group_iam_role_arn : null
+  value       = var.infra_enable_node_iam_roles ? module.iam_pre.node_group_iam_role_arn : null
 }
