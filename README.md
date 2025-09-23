@@ -46,13 +46,13 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 
 ### 🧠 Features
 
+* ✅ Separate environments (`dev`, `prod`)
 * ✅ Modular Terraform structure (`vpc`, `iam`, `eks`)
 * ✅ Public/private subnets with NAT Gateway
 * ✅ Spot and On-Demand node groups
 * ✅ Secure EKS cluster (private API access)
 * ✅ OIDC/IRSA enabled for Kubernetes IAM
-* ✅ Configurable EKS add-ons (`vpc-cni`, `CoreDNS`, `kube-proxy`, `EBS CSI`)
-* ✅ Separate environments (`dev`, `prod`)
+* ✅ Configurable EKS add-ons
 * ✅ GitHub + Jenkins CI ready 
 * ✅ Remote S3 backend with state locking via DynamoDB for Terraform state management
 
@@ -61,7 +61,7 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 ### 🔧 Prerequisites
 
 * Terraform CLI
-* AWS credentials with appropriate IAM permissions
+* AWS IAM user with appropriate permissions
 * S3 bucket + DynamoDB table for remote state storing
 * Jenkins server configured with docker, terraform  plugins and credentials (for all relevant CI/CD jobs.) 
 
@@ -139,7 +139,6 @@ This Terraform configuration deploys a production-ready EKS cluster named ignite
 * Virtual Private Cloud (VPC) with public and private subnets across multiple Availability Zones
 * NAT gateway and Internet Gateway for routing internet traffic
 * Route tables for public and private subnet routing
-* Security Groups configured for public HTTP/HTTPS access
 
 
 ```bash
@@ -153,6 +152,7 @@ rm backend.tf
 ### 🔁 Switching Between Environments (e.g. prod)
 
 ```bash
+
 cp environments/prod/backend.tf ./backend.tf
 terraform init -reconfigure
 terraform plan -var-file=environments/prod/prod.tfvars -out=tfplan-prod
@@ -173,13 +173,64 @@ This project includes a `Jenkinsfile` for automating:
 
 ---
 
+### Configuring Ingress 
+
+An Ingress is a Kubernetes API object that manages external access to services within a cluster, typically over HTTP and HTTPS.
+With Ingress, you can use one entry point (like a single door) and let rules decide which app the request should go to.
+
+Ingress doesn’t handle traffic itself; it needs an Ingress Controller.
+
+* Access the eks by a jumpserver (created in side the vpc )
+
+
+```bash
+
+# IAM OIDC provider is already setup using terraform.
+
+# Download IAM policy for the Load Balancer Controller
+curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.11.0/docs/install/iam_policy.json
+
+# Create an IAM policy called AWSLoadBalancerControllerIAMPolicy
+aws iam create-policy \
+    --policy-name AWSLoadBalancerControllerIAMPolicy \
+    --policy-document file://iam_policy.json
+
+# Create an IAM service account in Kubernetes with the policy attached (Replace the values for cluster name, region code, and account ID)
+eksctl create iamserviceaccount \
+    --cluster=<cluster-name> \
+    --namespace=kube-system \
+    --name=aws-load-balancer-controller \
+    --attach-policy-arn=arn:aws:iam::<AWS_ACCOUNT_ID>:policy/AWSLoadBalancerControllerIAMPolicy \
+    --override-existing-serviceaccounts \
+    --region <aws-region-code> \
+    --approve
+```    
+
+* Install AWS Load Balencer with helm (install helm if haven't already)
+
+```bash
+
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update eks
+ 
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=my-cluster \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --version 1.13.0
+
+# helm install command automatically installs the custom resource definitions (CRDs) for the controller.
+```
+
 ### 🧱 Modules Overview
 
 | Module | Description                                                    |
 | ------ | -------------------------------------------------------------- |
 | `vpc/` | Creates VPC, public/private subnets, route tables, NAT gateway, internet gateway, elastic IP, security group|
-| `iam/` | Creates IAM roles for EKS control plane, node groups, OIDC IRSA iam role |
+| `iam/` | Creates IAM roles and attach policies for EKS control plane, node groups, OIDC IRSA|
 | `eks/` | Creates EKS cluster, node groups (spot/on-demand), add-ons |
 
 ---
 
+### 
