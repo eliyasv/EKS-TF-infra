@@ -120,17 +120,17 @@ resource "aws_iam_policy" "ignite-eks-oidc-policy" {
   policy = jsonencode({
     Statement = [{
       Action = [
-        "s3:ListAllMyBuckets",   # Allow listing all S3 buckets
-        "s3:GetBucketLocation",   # Allow getting a bucket's location
-        "*"     # Allow all actions (not safe for production - least privilege recommended)
+        "s3:ListAllMyBuckets",
+        "s3:GetBucketLocation",
+        "*"
       ]
       Effect   = "Allow"
-      Resource = "*"    # Applies to all resources
+      Resource = "*"
     }]
     Version = "2012-10-17"
   })
 }
-
+# The "*" above will allow all actions and resourses (not safe for production - least privilege recommended)
 # Attach the custom IAM Policy to IRSA Role 
 resource "aws_iam_role_policy_attachment" "ignite-oidc-policy-attach" {
   role       = aws_iam_role.ignite_eks_irsa_role.name
