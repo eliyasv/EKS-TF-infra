@@ -1,10 +1,15 @@
-## 🚀 EKS Infrastructure with Terraform
+## EKS Infrastructure with Terraform
 
-This repository provisions an **Amazon EKS cluster** designed for scalability, reusability, and DevOps automation best practices.
+This repository provisions a production-ready Amazon EKS cluster using Terraform following Infrastructure-as-Code (IaC), DevOps, and AWS best practices.
+
+It is designed to be modular, scalable, cost-aware, and environment-agnostic (dev, prod).
+The cluster on desired capacity runs 3 worker nodes:
+2 on-demand for baseline stability and 1 spot node for cost-optimized workloads.
+It can autoscale between 2 and 8 nodes depending on demand.
 
 ---
 
-### 📁 Folder Structure
+### Folder Structure
 
 ```bash
 ❯ tree -aL 3
@@ -43,22 +48,40 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 ```
 
 ---
+### High-Level Architecture
 
-### 🧠 Features
+What this project creates:
 
-* ✅ Separate environments (`dev`, `prod`)
-* ✅ Modular Terraform structure (`vpc`, `iam`, `eks`)
-* ✅ Public/private subnets with NAT Gateway
-* ✅ Spot and On-Demand node groups
-* ✅ Secure EKS cluster (private API access)
-* ✅ OIDC/IRSA enabled for Kubernetes IAM
-* ✅ Configurable EKS add-ons
-* ✅ GitHub + Jenkins CI ready 
-* ✅ Remote S3 backend with state locking via DynamoDB for Terraform state management
+* Multi-AZ VPC with public and private subnets
+* Private EKS control plane (no public API exposure)
+* Managed EKS node groups:
+* On-Demand nodes for baseline workloads
+* Spot nodes for cost-optimized workloads
+* IAM Roles for Service Accounts (IRSA) via OIDC
+* Managed EKS add-ons (CoreDNS, kube-proxy, VPC CNI, EBS CSI)
+* Remote Terraform state with locking
+* CI/CD-ready pipeline using Jenkins
+
+Traffic flow:
+
+Internet → ALB (Ingress) → Kubernetes Services → Pods
+
+### Features
+
+*  Separate environments (`dev`, `prod`)
+*  Modular Terraform structure (`vpc`, `iam`, `eks`)
+*  Multi-AZ for high availability
+*  Public/private subnets with NAT Gateway
+*  Spot and On-Demand node groups for cost optimization
+*  Secure EKS cluster (private API access)
+*  OIDC/IRSA enabled for Kubernetes IAM
+*  Configurable EKS add-ons
+*  CI/CD ready with Jenkins pipeline for safe plan/apply/destroy
+*  Remote S3 backend with state locking via DynamoDB for Terraform state management
 
 ---
 
-### 🔧 Prerequisites
+### Prerequisites
 
 * Terraform CLI
 * AWS IAM user with appropriate permissions
@@ -67,7 +90,7 @@ This repository provisions an **Amazon EKS cluster** designed for scalability, r
 
 ---
 
-### 🌐 Remote Backend Configuration
+### Remote Backend Configuration
 
 Edit `backend.tf` to match your S3 and DynamoDB setup:
 
@@ -85,7 +108,7 @@ terraform {
 
 ---
 
-### 🚨 Environment Variables
+### Environment Variables
 
 You can override values in `dev.tfvars` or `prod.tfvars`. Example:
 
@@ -102,14 +125,14 @@ infra_eks_version       = "1.30"
 
 ---
 
-### ✅ Per-Environment Terraform Workflow (Locally)
+### Per-Environment Terraform Workflow (Locally)
 
 
 You can deploy or manage infrastructure for each environment (`dev`, `prod`, etc.) independently using their own backend and variable files.
 
 > 📌 All commands should be run from the project root (`EKS-TF-infra/`)
 
-### 🔧 Steps for `dev` Environment
+### Steps for `dev` Environment
 
 ---
 
@@ -149,7 +172,7 @@ terraform destroy -var-file=environments/dev/dev.tfvars
 # Clean up
 rm backend.tf
 ```
-### 🔁 Switching Between Environments (e.g. prod)
+### Switching Between Environments (e.g. prod)
 
 ```bash
 
@@ -223,7 +246,7 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 # helm install command automatically installs the custom resource definitions (CRDs) for the controller.
 ```
 
-### 🧱 Modules Overview
+### Modules Overview
 
 | Module | Description                                                    |
 | ------ | -------------------------------------------------------------- |
