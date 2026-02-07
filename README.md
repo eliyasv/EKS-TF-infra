@@ -1,11 +1,79 @@
 ## EKS Infrastructure with Terraform
 
-This repository provisions a production-ready Amazon EKS cluster using Terraform following Infrastructure-as-Code (IaC), DevOps, and AWS best practices.
+Production-style Kubernetes infrastructure on AWS using Terraform, designed to be modular, reproducible, and environment-agnostic.
 
-It is designed to be modular, scalable, cost-aware, and environment-agnostic (dev, prod).
-The cluster on desired capacity runs 3 worker nodes:
-2 on-demand for baseline stability and 1 spot node for cost-optimized workloads.
-It can autoscale between 2 and 8 nodes depending on demand.
+This project demonstrates Infrastructure as Code, Kubernetes platform provisioning, and cloud networking design aligned with DevOps best practices.
+
+---
+### What This Project Demonstrates
+
+* Infrastructure as Code using Terraform
+* Kubernetes platform provisioning on AWS
+* Cloud networking design (VPC/subnets/routing)
+* IAM role configuration for managed services
+* Reusable infrastructure modules
+* Cluster scalability design (scalable from 3–8 nodes)
+
+### Features
+
+*  Separate environments (`dev`, `prod`)
+*  Modular Terraform structure (`vpc`, `iam`, `eks`)
+*  Multi-AZ for high availability
+*  Public/private subnets with NAT Gateway
+*  Spot and On-Demand node groups for cost optimization
+*  Secure EKS cluster (private API access)
+*  OIDC/IRSA enabled for Kubernetes IAM
+*  Configurable EKS add-ons
+*  CI/CD ready with Jenkins pipeline for safe plan/apply/destroy
+*  Remote S3 backend with state locking via DynamoDB for Terraform state management
+
+---
+
+### Modules Overview
+
+| Module | Description                                                    |
+| ------ | -------------------------------------------------------------- |
+| `vpc/` | Creates VPC, public/private subnets, route tables, NAT gateway, internet gateway, elastic IP, security group|
+| `iam/` | Creates IAM roles and attach policies for EKS control plane, node groups, OIDC IRSA|
+| `eks/` | Creates EKS cluster, node groups (spot/on-demand), add-ons |
+
+---
+
+### Prerequisites
+
+* Terraform CLI
+* AWS IAM user with appropriate permissions
+* S3 bucket + DynamoDB table for remote state storing
+* Jenkins server configured with docker, terraform  plugins and credentials (for all relevant CI/CD jobs.) 
+
+---
+
+### CI Pipeline (Jenkins)
+
+Infrastructure provisioning is automated using a Jenkins pipeline.
+The pipeline supports environment-based deployments and safe infrastructure changes.
+
+Pipeline Stages:
+
+* Checkout repository
+* Prepare environment backend configuration
+* Terraform init
+* Terraform fmt
+* Terraform validate
+* Terraform plan
+* Manual approval (apply/destroy)
+* Terraform apply or destroy
+
+The pipeline uses parameterized builds:
+
+ENVIRONMENT:  dev/prod
+ACTION:  plan/apply/destroy
+
+Infrastructure changes follow this workflow:
+
+Git Commit → Jenkins Pipeline → Terraform Plan → Approval → Apply → AWS EKS
+
+This workflow ensures infrastructure changes are validated before provisioning and provides controlled deployment of cloud resources.
 
 ---
 
@@ -46,47 +114,7 @@ It can autoscale between 2 and 8 nodes depending on demand.
 
 
 ```
-
 ---
-### High-Level Architecture
-
-What this project creates:
-
-* Multi-AZ VPC with public and private subnets
-* Private EKS control plane (no public API exposure)
-* Managed EKS node groups:
-* On-Demand nodes for baseline workloads
-* Spot nodes for cost-optimized workloads
-* IAM Roles for Service Accounts (IRSA) via OIDC
-* Managed EKS add-ons (CoreDNS, kube-proxy, VPC CNI, EBS CSI)
-* Remote Terraform state with locking
-* CI/CD-ready pipeline using Jenkins
-
-Traffic flow:
-
-Internet → ALB (Ingress) → Kubernetes Services → Pods
-
-### Features
-
-*  Separate environments (`dev`, `prod`)
-*  Modular Terraform structure (`vpc`, `iam`, `eks`)
-*  Multi-AZ for high availability
-*  Public/private subnets with NAT Gateway
-*  Spot and On-Demand node groups for cost optimization
-*  Secure EKS cluster (private API access)
-*  OIDC/IRSA enabled for Kubernetes IAM
-*  Configurable EKS add-ons
-*  CI/CD ready with Jenkins pipeline for safe plan/apply/destroy
-*  Remote S3 backend with state locking via DynamoDB for Terraform state management
-
----
-
-### Prerequisites
-
-* Terraform CLI
-* AWS IAM user with appropriate permissions
-* S3 bucket + DynamoDB table for remote state storing
-* Jenkins server configured with docker, terraform  plugins and credentials (for all relevant CI/CD jobs.) 
 
 ---
 
@@ -126,7 +154,6 @@ infra_eks_version       = "1.30"
 ---
 
 ### Per-Environment Terraform Workflow (Locally)
-
 
 You can deploy or manage infrastructure for each environment (`dev`, `prod`, etc.) independently using their own backend and variable files.
 
@@ -182,28 +209,16 @@ terraform plan -var-file=environments/prod/prod.tfvars -out=tfplan-prod
 terraform apply tfplan-prod
 
 ```
-
 ---
 
-### 🛠️ CI/CD with Jenkins
-
-This project includes a `Jenkinsfile` for automating:
-
-* Terraform plan/apply/destroy
-* Environment selection (`dev`, `prod`)
-* Safe apply/destroy with approval gates
-
-
----
-
-### Configuring Ingress 
+### Configuring Ingress in the cluster
 
 An Ingress is a Kubernetes API object that manages external access to services within a cluster, typically over HTTP and HTTPS.
 With Ingress, you can use one entry point (like a single door) and let rules decide which app the request should go to.
 
 Ingress doesn’t handle traffic itself; it needs an Ingress Controller.
 
-* Access the eks by a jumpserver (created in side the vpc )
+* Access the eks by jumpserver (created inside the vpc with apropriate sg rules)
 
 
 ```bash
@@ -246,14 +261,3 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 # helm install command automatically installs the custom resource definitions (CRDs) for the controller.
 ```
 
-### Modules Overview
-
-| Module | Description                                                    |
-| ------ | -------------------------------------------------------------- |
-| `vpc/` | Creates VPC, public/private subnets, route tables, NAT gateway, internet gateway, elastic IP, security group|
-| `iam/` | Creates IAM roles and attach policies for EKS control plane, node groups, OIDC IRSA|
-| `eks/` | Creates EKS cluster, node groups (spot/on-demand), add-ons |
-
----
-
-### 
