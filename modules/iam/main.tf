@@ -88,7 +88,10 @@ resource "aws_iam_role_policy_attachment" "ignite_nodegroup_ebs_policy" {
 }
 
 # OpenID Connect Provider (oidc) for EKS (required for IRSA)
+# Only create if both URL and thumbprint are provided
 resource "aws_iam_openid_connect_provider" "ignite_eks_oidc_provider" {
+  count = var.infra_oidc_url != null && var.infra_oidc_thumbprint != null ? 1 : 0
+  
   url             = var.infra_oidc_url
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [var.infra_oidc_thumbprint]
@@ -102,10 +105,11 @@ resource "aws_iam_openid_connect_provider" "ignite_eks_oidc_provider" {
 
 # IRSA IAM Role (example for enabling IAM roles for Kubernetes service accounts (IRSA))
 resource "aws_iam_role" "ignite_eks_irsa_role" {
+  count = var.infra_oidc_url != null && var.infra_oidc_thumbprint != null ? 1 : 0
   name = "${var.infra_cluster_name}-eks-irsa-role"
 
   # Trust policy should reference the EKS OIDC provider and restrict to the correct service account
-  assume_role_policy = data.aws_iam_policy_document.eks_oidc_assume_role_policy.json
+  assume_role_policy = data.aws_iam_policy_document.eks_oidc_assume_role_policy[0].json
 
   tags = {
     Name        = "${var.infra_cluster_name}-irsa-role"
@@ -115,6 +119,7 @@ resource "aws_iam_role" "ignite_eks_irsa_role" {
 }
 
 resource "aws_iam_policy" "ignite-eks-oidc-policy" {
+  count = var.infra_oidc_url != null && var.infra_oidc_thumbprint != null ? 1 : 0
   name = "test-policy"
 
   policy = jsonencode({
@@ -131,8 +136,9 @@ resource "aws_iam_policy" "ignite-eks-oidc-policy" {
   })
 }
 # The "*" above will allow all actions and resourses (not safe for production - least privilege recommended)
-# Attach the custom IAM Policy to IRSA Role 
+# Attach the custom IAM Policy to IRSA Role
 resource "aws_iam_role_policy_attachment" "ignite-oidc-policy-attach" {
-  role       = aws_iam_role.ignite_eks_irsa_role.name
-  policy_arn = aws_iam_policy.ignite-eks-oidc-policy.arn
+  count      = var.infra_oidc_url != null && var.infra_oidc_thumbprint != null ? 1 : 0
+  role       = aws_iam_role.ignite_eks_irsa_role[0].name
+  policy_arn = aws_iam_policy.ignite-eks-oidc-policy[0].arn
 }

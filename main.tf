@@ -74,10 +74,9 @@ module "eks" {
   infra_tags                  = var.infra_tags
 }
 
-
-
-# IAM IRSA: create OIDC provider + IRSA roles once URL/thumbprint exist
+# Conditionally create IAM IRSA module only when both EKS and IRSA are enabled
 module "iam_irsa" {
+  count = var.infra_enable_eks && var.infra_enable_irsa ? 1 : 0
   source = "./modules/iam"
 
   infra_environment  = var.infra_environment

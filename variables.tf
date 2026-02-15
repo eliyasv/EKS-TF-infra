@@ -171,3 +171,12 @@ variable "infra_eks_addons" {
     version = string
   }))
 }
+
+# -----------------------------
+# IRSA Configuration
+# -----------------------------
+variable "infra_enable_irsa" {
+  description = "Whether to enable IRSA (IAM Roles for Service Accounts) - requires EKS cluster to exist first"
+  type        = bool
+  default     = false
+}

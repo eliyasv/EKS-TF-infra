@@ -4,16 +4,16 @@ infra_region       = "us-east-1"
 infra_project_name = "project-ignite"
 
 # VPC Configuration
-infra_vpc_cidr_block       = "10.200.0.0/16"
+infra_vpc_cidr             = "10.200.0.0/16"
 infra_public_subnet_cidrs  = ["10.200.0.0/20", "10.200.16.0/20", "10.200.32.0/20"]
 infra_private_subnet_cidrs = ["10.200.128.0/20", "10.200.144.0/20", "10.200.160.0/20"]
 infra_subnet_azs           = ["us-east-1a", "us-east-1b", "us-east-1c"]
 
 # EKS Cluster Configuration
 infra_enable_eks          = true
-infra_eks_cluster_version = "1.30"
-infra_enable_private_api  = true
-infra_enable_public_api   = false
+infra_cluster_version     = "1.30"
+infra_enable_private_access  = true
+infra_enable_public_access   = false
 
 # Node Group Configuration (On-Demand)
 infra_enable_ondemand_nodes     = true
