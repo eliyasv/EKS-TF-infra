@@ -353,6 +353,6 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 -  IRSA enabled for pod-level IAM
 -  State encryption at rest (S3)
 -  State locking (DynamoDB)
-- # Security group allows 0.0.0.0/0 on 443 (restrict in production)
-- # IRSA policy uses wildcard permissions (apply least privilege in production)
+-  Security group allows 0.0.0.0/0 on 443 (restrict in production)
+-  IRSA policy uses wildcard permissions (apply least privilege in production)
 
