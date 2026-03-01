@@ -29,13 +29,91 @@ This project demonstrates Infrastructure as Code, Kubernetes platform provisioni
 
 ---
 
-### Modules Overview
+### Architecture Overview
 
-| Module | Description                                                    |
-| ------ | -------------------------------------------------------------- |
-| `vpc/` | Creates VPC, public/private subnets, route tables, NAT gateway, internet gateway, elastic IP, security group|
-| `iam/` | Creates IAM roles and attach policies for EKS control plane, node groups, OIDC IRSA|
-| `eks/` | Creates EKS cluster, node groups (spot/on-demand), add-ons |
+      ┌─────────────────────────────────────────────────────────────────────────────┐
+      │                              AWS CLOUD (us-east-1)                          │
+      │                                                                             │
+      │  ┌───────────────────────────────────────────────────────────────────────┐  │
+      │  │                         VPC (10.x.0.0/16)                             │  │
+      │  │                                                                       │  │
+      │  │  ┌──────────────────┐         ┌────────────────────────────────────┐  │  │
+      │  │  │  Public Subnets  │         │       Private Subnets              │  │  │
+      │  │  │  (3 AZs)         │         │         (3 AZs)                    │  │  │
+      │  │  │                  │         │                                    │  │  │
+      │  │  │  ┌────────────┐  │         │  ┌──────────────────────────────┐  │  │  │
+      │  │  │  │ Internet   │  │         │  │      EKS Cluster             │  │  │  │
+      │  │  │  │  Gateway   │  │         │  │  ┌──────────────────────┐    │  │  │  │
+      │  │  │  └─────┬──────┘  │         │  │  │   Control Plane      │    │  │  │  │
+      │  │  │        │         │         │  │  │   (Private API)      │    │  │  │  │
+      │  │  │  ┌─────▼──────┐  │         │  │  └──────────┬───────────┘    │  │  │  │
+      │  │  │  │ NAT Gateway│  │         │  │             │                │  │  │  │
+      │  │  │  └────────────┘  │         │  │  ┌──────────▼───────────┐    │  │  │  │
+      │  │  │                  │         │  │  │   Node Groups        │    │  │  │  │
+      │  │  │  ┌────────────┐  │         │  │  │  • On-Demand         │    │  │  │  │
+      │  │  │  │ Route Table│  │         │  │  │  • Spot              │    │  │  │  │
+      │  │  │  └────────────┘  │         │  │  └──────────────────────┘    │  │  │  │
+      │  │  └──────────────────┘         └────────────────────────────────────┘  │  |
+      │  └───────────────────────────────────────────────────────────────────────┘  │
+      │                                                                             │
+      │  ┌──────────────────────────┐  ┌────────────────────────────────────────┐   │
+      │  │      IAM Roles           │  │         State Backend                  │   │
+      │  │  • Control Plane         │  │  • S3 (terraform.tfstate)              │   │
+      │  │  • Node Groups           │  │  • DynamoDB (state locking)            │   │
+      │  │  • OIDC/IRSA             │  │                                        │   │
+      │  └──────────────────────────┘  └────────────────────────────────────────┘   │
+      └─────────────────────────────────────────────────────────────────────────────┘
+                          ^                                  ^
+                          │                                  │
+               ┌──────────┴──────────┐             ┌─────────┴─────────┐
+               │   Jenkins Pipeline  │             │  Jumpserver       │
+               │   (Plan→Apply)      │             │   (kubectl)       │
+               └──────────┬──────────┘             └─────────┬─────────┘
+                          │                                    │
+                          └────────────┬───────────────────────┘
+                                       │
+                               ┌───────▼───────┐
+                               │ Git Repository│
+                               │ (Terraform)   │
+                               └───────────────┘
+
+
+### Terraform Module Overview
+      ┌─────────────────────┬───────────────────────────────────────────────────────┐
+      │      MODULE         │              WHAT IT BUILDS                           │
+      ├─────────────────────┼───────────────────────────────────────────────────────┤
+      │                     │                                                       │
+      │   modules/vpc/      │  Networking Foundation                                │
+      │                     │  • VPC (Virtual Private Cloud)                        │
+      │                     │  • Public Subnets (3 AZs)                             │
+      │                     │  • Private Subnets (3 AZs)                            │
+      │                     │  • Internet Gateway                                   │
+      │                     │  • NAT Gateway + Elastic IP                           │
+      │                     │  • Route Tables (public + private)                    │
+      │                     │  • Security Groups                                    │
+      │                     │                                                       │
+      ├─────────────────────┼───────────────────────────────────────────────────────┤
+      │                     │                                                       │
+      │   modules/iam/      │  Identity & Access Management                         │
+      │                     │  PHASE 1 (iam_pre):                                   │
+      │                     │  • EKS Control Plane IAM Role                         │
+      │                     │  • EKS Node Group IAM Role                            │
+      │                     │  • Attached AWS Managed Policies                      │
+      │                     │                                                       │
+      │                     │  PHASE 2 (iam_irsa):                                  │
+      │                     │  • OIDC Provider (trust relationship with EKS)        │
+      │                     │  • IRSA IAM Roles (for Kubernetes service accounts)   │
+      │                     │  • Custom IAM Policies                                │
+      │                     │                                                       │
+      ├─────────────────────┼───────────────────────────────────────────────────────┤
+      │                     │                                                       │
+      │   modules/eks/      │  Kubernetes Cluster                                   │
+      │                     │  • EKS Cluster (Control Plane)                        │
+      │                     │  • On-Demand Node Group                               │
+      │                     │  • Spot Node Group                                    │
+      │                     │  • EKS Add-ons (vpc-cni, coredns, kube-proxy, ebs-csi)│
+      │                     │                                                       │
+      └─────────────────────┴───────────────────────────────────────────────────────┘
 
 ---
 
@@ -75,6 +153,18 @@ Git Commit → Jenkins Pipeline → Terraform Plan → Approval → Apply → AW
 
 This workflow ensures infrastructure changes are validated before provisioning and provides controlled deployment of cloud resources.
 
+---
+
+### Accessing the Cluster
+
+```bash
+#Get kubeconfig
+aws eks update-kubeconfig --region us-east-1 --name ignite-cluster-dev
+#Verify access
+kubectl get nodes
+# Deploy sample app
+kubectl apply -f https://k8s.io/examples/application/deployment.yaml
+```
 ---
 
 ### Folder Structure
@@ -142,12 +232,12 @@ You can override values in `dev.tfvars` or `prod.tfvars`. Example:
 
 ```hcl
 # environments/dev.tfvars
-infra_env               = "dev"
+infra_environment       = "dev"
 infra_region            = "us-east-1"
 infra_vpc_cidr          = "10.10.0.0/16"
 infra_cluster_name      = "dev-project-ignite-cluster"
 infra_enable_eks        = true
-infra_eks_version       = "1.30"
+infra_cluster_version       = "1.30"
 ...
 ```
 
@@ -159,22 +249,19 @@ You can deploy or manage infrastructure for each environment (`dev`, `prod`, etc
 
 > 📌 All commands should be run from the project root (`EKS-TF-infra/`)
 
-### Steps for `dev` Environment
-
----
+### Steps for `dev` Environment Quick Start (local)
 
 ```bash
 
+# Clone repo
+git clone https://github.com/eliyasv/EKS-TF-infra.git
+cd EKS-TF-infra
 # Copy backend config
 cp environments/dev/backend.tf ./backend.tf
-
 # Initialize Terraform
 terraform init
-
 # Plan for dev(This creates an execution plan based on the dev environment variables.)
 terraform plan -var-file=environments/dev/dev.tfvars -out=tfplan-dev
-
-
 # Apply for dev
 terraform apply tfplan-dev
 
@@ -218,7 +305,7 @@ With Ingress, you can use one entry point (like a single door) and let rules dec
 
 Ingress doesn’t handle traffic itself; it needs an Ingress Controller.
 
-* Access the eks by jumpserver (created inside the vpc with apropriate sg rules)
+* Access the eks by jumpserver (created inside the vpc with appropriate sg rules)
 
 
 ```bash
@@ -260,4 +347,12 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 
 # helm install command automatically installs the custom resource definitions (CRDs) for the controller.
 ```
+### Security Considerations
+     
+-  Private API endpoint (no public access)
+-  IRSA enabled for pod-level IAM
+-  State encryption at rest (S3)
+-  State locking (DynamoDB)
+- # Security group allows 0.0.0.0/0 on 443 (restrict in production)
+- # IRSA policy uses wildcard permissions (apply least privilege in production)
 
