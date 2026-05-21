@@ -1,6 +1,6 @@
 ###################################
 # Root - variables.tf
-# Description: Input variables for root module
+# Input variables for root module
 ###################################
 
 # -----------------------------

@@ -18,14 +18,15 @@ This project demonstrates Infrastructure as Code, Kubernetes platform provisioni
 
 *  Separate environments (`dev`, `prod`)
 *  Modular Terraform structure (`vpc`, `iam`, `eks`)
-*  Multi-AZ for high availability
-*  Public/private subnets with NAT Gateway
+*  Multi-AZ Subnet distribution
+*  Public/private subnet architecture
+*  Single NAT Gateway (Cost-optimized for Dev; upgrade to Multi-NAT for Prod)
 *  Spot and On-Demand node groups for cost optimization
 *  Secure EKS cluster (private API access)
-*  OIDC/IRSA enabled for Kubernetes IAM
+*  OIDC Provider & IRSA enabled (Consolidated within EKS module)
 *  Configurable EKS add-ons
 *  CI/CD ready with Jenkins pipeline for safe plan/apply/destroy
-*  Remote S3 backend with state locking via DynamoDB for Terraform state management
+*  Remote S3 backend with state locking via DynamoDB
 
 ---
 
@@ -94,24 +95,18 @@ This project demonstrates Infrastructure as Code, Kubernetes platform provisioni
       │                     │                                                       │
       ├─────────────────────┼───────────────────────────────────────────────────────┤
       │                     │                                                       │
-      │   modules/iam/      │  Identity & Access Management                         │
-      │                     │  PHASE 1 (iam_pre):                                   │
+      │   modules/iam/      │  Core Identity & Access Management                    │
       │                     │  • EKS Control Plane IAM Role                         │
       │                     │  • EKS Node Group IAM Role                            │
-      │                     │  • Attached AWS Managed Policies                      │
-      │                     │                                                       │
-      │                     │  PHASE 2 (iam_irsa):                                  │
-      │                     │  • OIDC Provider (trust relationship with EKS)        │
-      │                     │  • IRSA IAM Roles (for Kubernetes service accounts)   │
-      │                     │  • Custom IAM Policies                                │
+      │                     │  • Required Managed Policy Attachments                │
       │                     │                                                       │
       ├─────────────────────┼───────────────────────────────────────────────────────┤
       │                     │                                                       │
-      │   modules/eks/      │  Kubernetes Cluster                                   │
+      │   modules/eks/      │  Kubernetes Platform (Consolidated)                   │
       │                     │  • EKS Cluster (Control Plane)                        │
-      │                     │  • On-Demand Node Group                               │
-      │                     │  • Spot Node Group                                    │
-      │                     │  • EKS Add-ons (vpc-cni, coredns, kube-proxy, ebs-csi)│
+      │                     │  • Managed Node Groups (On-Demand & Spot)             │
+      │                     │  • OIDC Identity Provider & IRSA Support              │
+      │                     │  • EKS Add-ons & Identity-Aware Security              │
       │                     │                                                       │
       └─────────────────────┴───────────────────────────────────────────────────────┘
 
@@ -355,4 +350,5 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 -  State locking (DynamoDB)
 -  Security group allows 0.0.0.0/0 on 443 (restrict in production)
 -  IRSA policy uses wildcard permissions (apply least privilege in production)
+-  Current setup uses a single NAT Gateway for cost-efficiency. Production requires one per AZ for High Availability.
 

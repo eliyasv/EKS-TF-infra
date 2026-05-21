@@ -1,6 +1,6 @@
 # -------------------------------
 # Root - outputs.tf
-# Description: Consolidated outputs from submodules
+# Consolidated outputs from submodules
 # -------------------------------
 
 output "vpc_id" {

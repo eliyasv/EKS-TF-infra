@@ -1,3 +1,7 @@
+# ------------------------
+# modules/eks/outputs.tf
+# ------------------------
+
 output "ignite_cluster_id" {
   value       = try(aws_eks_cluster.ignite_cluster[0].id, null)
   description = "ID of the EKS cluster"

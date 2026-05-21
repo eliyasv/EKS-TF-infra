@@ -111,6 +111,10 @@ pipeline {
   }
 
   post {
+    always {
+      // Cleaning up temporary files to prevent cross-environment pollution
+      sh 'rm -f backend.tf tfplan-*'
+    }
     success {
       echo "✅ Terraform ${params.ACTION} completed for ${params.ENVIRONMENT}."
     }

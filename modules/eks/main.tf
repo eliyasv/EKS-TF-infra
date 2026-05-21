@@ -22,6 +22,7 @@ resource "aws_eks_cluster" "ignite_cluster" {
     subnet_ids              = var.private_subnet_ids # subnets from different AZs recomended
     endpoint_private_access = var.infra_enable_private_access # private  endpoint
     endpoint_public_access  = var.infra_enable_public_access  # public  endpoint
+    security_group_ids      = [var.eks_security_group_id]
   }
 
   # Cluster access configuration
@@ -37,7 +38,9 @@ resource "aws_eks_cluster" "ignite_cluster" {
   })
 
   # Ensure IAM policies for the cluster are attached before creation
-
+  depends_on = [
+    var.control_plane_iam_role_arn
+  ]
 }
 
 # Node Group: On-Demand Instances
@@ -79,7 +82,10 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
   })
 
   # Ensure IAM policies for worker functionality are attached first
-  
+  depends_on = [
+    aws_eks_cluster.ignite_cluster,
+    var.node_group_iam_role_arn
+  ]
 }
 
 # Node Group: Spot Instances
@@ -117,7 +123,10 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
     Name = "${var.infra_cluster_name}-spot"
   })
 
-
+  depends_on = [
+    aws_eks_cluster.ignite_cluster,
+    var.node_group_iam_role_arn
+  ]
 }
 
 # EKS Addons
@@ -135,4 +144,25 @@ resource "aws_eks_addon" "ignite_addons" {
     aws_eks_node_group.ignite_ondemand_nodes,
     aws_eks_node_group.ignite_spot_nodes
   ]
+}
+
+# -----------------------------
+# IRSA Identity (OIDC)
+# -----------------------------
+
+data "tls_certificate" "oidc_thumbprint" {
+  count = var.infra_enable_eks ? 1 : 0
+  url   = aws_eks_cluster.ignite_cluster[0].identity[0].oidc[0].issuer
+}
+
+resource "aws_iam_openid_connect_provider" "ignite_eks_oidc_provider" {
+  count = var.infra_enable_eks ? 1 : 0
+  
+  url             = aws_eks_cluster.ignite_cluster[0].identity[0].oidc[0].issuer
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.oidc_thumbprint[0].certificates[0].sha1_fingerprint]
+
+  tags = merge(var.infra_tags, {
+    Name = "${var.infra_cluster_name}-oidc-provider"
+  })
 }

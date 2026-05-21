@@ -68,6 +68,11 @@ variable "public_subnet_ids" {
   type        = list(string)
 }
 
+variable "eks_security_group_id" {
+  description = "Security group ID for the EKS cluster"
+  type        = string
+}
+
 variable "control_plane_iam_role_arn" {
   description = "IAM role ARN for EKS control plane"
   type        = string
@@ -128,18 +133,6 @@ variable "infra_spot_min_capacity" {
 variable "infra_spot_max_capacity" {
   description = "Maximum capacity for spot node group"
   type        = number
-}
-
-variable "infra_oidc_url" {
-  description = "OIDC provider URL for EKS"
-  type        = string
-  default     = null
-}
-
-variable "infra_oidc_thumbprint" {
-  description = "OIDC provider thumbprint"
-  type        = string
-  default     = null
 }
 
 variable "infra_eks_addons" {

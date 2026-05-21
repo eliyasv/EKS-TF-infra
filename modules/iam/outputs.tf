@@ -1,17 +1,41 @@
-
+#----------------------
 # modules/iam/outputs.tf
+#-----------------------
 
-output "oidc_provider_arn" {
-  description = "OIDC provider ARN for IRSA"
-  value       = length(aws_iam_openid_connect_provider.ignite_eks_oidc_provider) > 0 ? aws_iam_openid_connect_provider.ignite_eks_oidc_provider[0].arn : null
-}
 
 output "control_plane_iam_role_arn" {
-  description = "IAM role ARN for the EKS control plane"
+  description = "The ARN of the EKS control plane IAM role"
   value       = try(aws_iam_role.ignite_eks_cluster_role[0].arn, null)
+
+  # Ensure policy is attached before the ARN is "ready" to prevent race condition
+  depends_on = [
+    aws_iam_role_policy_attachment.ignite_eks_cluster_policy
+  ]
 }
 
 output "node_group_iam_role_arn" {
-  description = "IAM role ARN for EKS node groups"
+  description = "The ARN of the EKS node group IAM role"
   value       = try(aws_iam_role.ignite_eks_nodegroup_role[0].arn, null)
+
+  # Wait for all node policies to be attached
+  depends_on = [
+    aws_iam_role_policy_attachment.ignite_nodegroup_worker_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_cni_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_registry_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_ebs_policy
+  ]
 }
+
+# A "readiness" output that can be used to force dependencies
+output "iam_policies_propagated" {
+  description = "A boolean to indicate if all IAM policies are attached and ready"
+  value       = true
+  depends_on = [
+    aws_iam_role_policy_attachment.ignite_eks_cluster_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_worker_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_cni_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_registry_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_ebs_policy
+  ]
+}
+
