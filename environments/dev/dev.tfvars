@@ -6,9 +6,25 @@ infra_cluster_name = "ignite-cluster-dev"
 
 # VPC Configuration
 infra_vpc_cidr             = "10.100.0.0/16"
-infra_public_subnet_cidrs  = ["10.100.0.0/20", "10.100.16.0/20", "10.100.32.0/20"]
-infra_private_subnet_cidrs = ["10.100.128.0/20", "10.100.144.0/20", "10.100.160.0/20"]
-infra_subnet_azs           = ["us-east-1a", "us-east-1b", "us-east-1c"]
+infra_subnets = {
+  public-a = {
+    az           = "us-east-1a"
+    public_cidr  = "10.100.0.0/20"
+    private_cidr = "10.100.128.0/20"
+  }
+
+  public-b = {
+    az           = "us-east-1b"
+    public_cidr  = "10.100.16.0/20"
+    private_cidr = "10.100.144.0/20"
+  }
+
+  public-c = {
+    az           = "us-east-1c"
+    public_cidr  = "10.100.32.0/20"
+    private_cidr = "10.100.160.0/20"
+  }
+}
 
 # EKS Cluster Configuration
 infra_enable_eks          = true

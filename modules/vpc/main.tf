@@ -26,12 +26,12 @@ resource "aws_internet_gateway" "infra_igw" {
 
 # Create Public Subnets in each Availability Zone
 resource "aws_subnet" "infra_public_subnets" {
-  for_each = { for idx, az in var.infra_subnet_azs : idx => az } # Loop over each AZ from variable infra_subnet_azs
+  for_each = var.infra_subnets #replaced count for flexible identity
 
   vpc_id                  = aws_vpc.infra_vpc.id
-  cidr_block              = var.infra_public_subnet_cidrs[each.key]
-  availability_zone       = each.value
-  map_public_ip_on_launch = true  # Automatically assign public IPs to instances launched in these subnets
+  cidr_block              = each.value.public_cidr
+  availability_zone       = each.value.az
+  map_public_ip_on_launch = true # Automatically assign public IPs to instances launched in these subnets
 
   tags = merge(var.infra_tags, {
     Name                                              = "${var.infra_environment}-${var.infra_project_name}-public-${each.key}"
@@ -43,11 +43,11 @@ resource "aws_subnet" "infra_public_subnets" {
 
 # Create Private Subnets in each Availability Zone
 resource "aws_subnet" "infra_private_subnets" {
-  for_each = { for idx, az in var.infra_subnet_azs : idx => az }
+  for_each = var.infra_subnets
 
   vpc_id            = aws_vpc.infra_vpc.id
-  cidr_block        = var.infra_private_subnet_cidrs[each.key]
-  availability_zone = each.value
+  cidr_block        = each.value.private_cidr
+  availability_zone = each.value.az
 
   tags = merge(var.infra_tags, {
     Name                                              = "${var.infra_environment}-${var.infra_project_name}-private-${each.key}"
@@ -72,7 +72,7 @@ resource "aws_eip" "infra_nat_eip" {
 # Create a NAT Gateway in the public subnet (allows private subnet instances internet access).
 resource "aws_nat_gateway" "infra_nat_gw" {
   allocation_id = aws_eip.infra_nat_eip[0].id # currently set up on one az only, in prod it is required for all az.
-  subnet_id     = aws_subnet.infra_public_subnets["0"].id  # NAT Gateway must be in a public subnet to provide internet access
+  subnet_id = aws_subnet.infra_public_subnets["public-a"].id  # NAT Gateway must be in a public subnet to provide internet access
 
   tags = merge(var.infra_tags, {
     Name = "${var.infra_environment}-${var.infra_project_name}-nat-gw"
