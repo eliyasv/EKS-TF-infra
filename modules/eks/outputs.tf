@@ -37,6 +37,16 @@ output "oidc_issuer_url" {
   value       = try(aws_eks_cluster.ignite_cluster[0].identity[0].oidc[0].issuer, null)
 }
 
+output "oidc_provider_arn" {
+  description = "OIDC provider ARN created for the cluster"
+  value       = try(aws_iam_openid_connect_provider.ignite_eks_oidc_provider[0].arn, null)
+}
+
+output "oidc_thumbprint" {
+  description = "OIDC provider TLS thumbprint (SHA1)"
+  value       = try(data.tls_certificate.oidc_thumbprint[0].certificates[0].sha1_fingerprint, null)
+}
+
 output "private_subnet_ids" {
   description = "Private subnet IDs used by EKS"
   value       = var.private_subnet_ids

@@ -25,22 +25,13 @@ resource "aws_eks_cluster" "ignite_cluster" {
     security_group_ids      = [var.eks_security_group_id]
   }
 
-  # Cluster access configuration
-  access_config {
-    authentication_mode                         = "API"  # Enables IAM authentication
-    bootstrap_cluster_creator_admin_permissions = true   # Grants admin permissions to creator
-  }
-
   # Tags for better resource management
   tags = merge(var.infra_tags, {
     Name = var.infra_cluster_name
     Env  = var.infra_environment
   })
-
   # Ensure IAM policies for the cluster are attached before creation
-  depends_on = [
-    var.control_plane_iam_role_arn
-  ]
+  # Dependencies on IAM roles are provided implicitly via module inputs (role ARNs)
 }
 
 # Node Group: On-Demand Instances
@@ -83,8 +74,7 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
 
   # Ensure IAM policies for worker functionality are attached first
   depends_on = [
-    aws_eks_cluster.ignite_cluster,
-    var.node_group_iam_role_arn
+    aws_eks_cluster.ignite_cluster
   ]
 }
 
@@ -124,8 +114,7 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
   })
 
   depends_on = [
-    aws_eks_cluster.ignite_cluster,
-    var.node_group_iam_role_arn
+    aws_eks_cluster.ignite_cluster
   ]
 }
 

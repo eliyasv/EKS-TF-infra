@@ -2,7 +2,7 @@ pipeline {
   agent any   // Run on any available build agent
 
   environment {
-    TF_VERSION = '1.8.5'
+    TF_VERSION = '1.15.0'
     AWS_REGION = 'us-east-1'
     GIT_REPO   = 'https://github.com/eliyasv/EKS-TF-infra.git'
     GIT_BRANCH = 'main'
@@ -66,30 +66,72 @@ pipeline {
    }
 
 
-    stage('Terraform Plan') {
+
+    stage('Terraform Plan IAM Core') {
       when {
-        // Only run if selected 'plan' or 'apply'
         expression { params.ACTION == 'plan' || params.ACTION == 'apply' }
       }
       steps {
         withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-          // Run a Terraform plan using environment-specific variables, and save the plan to a file
-          sh "terraform plan -var-file=environments/${params.ENVIRONMENT}/${params.ENVIRONMENT}.tfvars -out=tfplan-${params.ENVIRONMENT}"
+          sh "terraform plan -var-file=environments/${params.ENVIRONMENT}/${params.ENVIRONMENT}.tfvars -target=module.iam_core -out=tfplan-${params.ENVIRONMENT}-iam_core"
         }
       }
     }
 
-    stage('Terraform Apply') {
+    stage('Terraform Plan EKS') {
       when {
-        // Only run if user selected 'apply'
+        expression { params.ACTION == 'plan' || params.ACTION == 'apply' }
+      }
+      steps {
+        withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
+          sh "terraform plan -var-file=environments/${params.ENVIRONMENT}/${params.ENVIRONMENT}.tfvars -target=module.eks -out=tfplan-${params.ENVIRONMENT}-eks"
+        }
+      }
+    }
+
+    stage('Terraform Plan IRSA') {
+      when {
+        expression { params.ACTION == 'plan' || params.ACTION == 'apply' }
+      }
+      steps {
+        withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
+          sh "terraform plan -var-file=environments/${params.ENVIRONMENT}/${params.ENVIRONMENT}.tfvars -target=module.iam_irsa -out=tfplan-${params.ENVIRONMENT}-irsa"
+        }
+      }
+    }
+
+    stage('Terraform Apply IAM Core') {
+      when {
         expression { params.ACTION == 'apply' }
       }
       steps {
         withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-        // Shows a manual approval prompt before proceeding
-          input message: "Are you sure you want to APPLY changes to ${params.ENVIRONMENT}?", ok: "Yes, apply" 
-        // Apply changes from the saved plan file
-          sh "terraform apply -auto-approve tfplan-${params.ENVIRONMENT}"
+          input message: "Approve IAM Core apply for ${params.ENVIRONMENT}?", ok: "Apply IAM Core"
+          sh "terraform apply -auto-approve tfplan-${params.ENVIRONMENT}-iam_core"
+        }
+      }
+    }
+
+    stage('Terraform Apply EKS') {
+      when {
+        expression { params.ACTION == 'apply' }
+      }
+      steps {
+        withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
+          input message: "Approve EKS apply for ${params.ENVIRONMENT}?", ok: "Apply EKS"
+          sh "terraform apply -auto-approve tfplan-${params.ENVIRONMENT}-eks"
+        }
+      }
+    }
+
+    stage('Terraform Apply IRSA') {
+      when {
+        expression { params.ACTION == 'apply' }
+      }
+      steps {
+        withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
+          input message: "Approve IRSA apply for ${params.ENVIRONMENT}?", ok: "Apply IRSA"
+          sh "terraform apply -auto-approve tfplan-${params.ENVIRONMENT}-irsa"
         }
       }
     }

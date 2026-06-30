@@ -4,7 +4,7 @@
 
 terraform {
   # Pinned Terraform CLI version to ensure stability
-  required_version = "~> 1.8.0"
+  required_version = "~> 1.15.0"
 
   required_providers {
     aws = {

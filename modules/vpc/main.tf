@@ -138,16 +138,8 @@ resource "aws_route_table_association" "infra_private_rt_assoc" {
 
 resource "aws_security_group" "infra_eks_sg" {
   name        = "${var.infra_environment}-${var.infra_project_name}-eks-sg"
-  description = "Allow access from the jumpserver"
+  description = "EKS cluster security group (API access restricted to bastion/jump host)"
   vpc_id      = aws_vpc.infra_vpc.id
-
-  ingress {
-    description = "Allow HTTPS"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   egress {
     description = "Allow all outbound"
@@ -161,4 +153,46 @@ resource "aws_security_group" "infra_eks_sg" {
     Name = "${var.infra_environment}-${var.infra_project_name}-eks-sg"
   })
 }
+
+# Ingress rules for the EKS API endpoint. Prefer `infra_bastion_sg_id` (SG-to-SG) for least-privilege.
+resource "aws_security_group_rule" "allow_https_from_bastion_sg" {
+  count = var.infra_bastion_sg_id != null ? 1 : 0
+  type = "ingress"
+  from_port = 443
+  to_port = 443
+  protocol = "tcp"
+  security_group_id = aws_security_group.infra_eks_sg.id
+  source_security_group_id = var.infra_bastion_sg_id
+  description = "Allow HTTPS from bastion security group"
+}
+
+resource "aws_security_group_rule" "allow_https_from_bastion_cidr" {
+  count = var.infra_bastion_cidr != null && var.infra_bastion_cidr != "" ? 1 : 0
+  type = "ingress"
+  from_port = 443
+  to_port = 443
+  protocol = "tcp"
+  security_group_id = aws_security_group.infra_eks_sg.id
+  cidr_blocks = [var.infra_bastion_cidr]
+  description = "Allow HTTPS from bastion CIDR"
+}
+
+# Fallback (not recommended): if no bastion CIDR/SG provided, open HTTPS to the world.
+resource "aws_security_group_rule" "allow_https_open" {
+  count = var.infra_bastion_sg_id == null && (var.infra_bastion_cidr == null || var.infra_bastion_cidr == "") ? 1 : 0
+  type = "ingress"
+  from_port = 443
+  to_port = 443
+  protocol = "tcp"
+  security_group_id = aws_security_group.infra_eks_sg.id
+  cidr_blocks = ["0.0.0.0/0"]
+  description = "Fallback: Allow HTTPS from everywhere (NOT recommended for production)"
+}
+
+# Note: For production high-availability, create a NAT Gateway per AZ and associate private subnet route tables to the NAT in the same AZ.
+# Example: allocate one EIP per AZ, create one NAT per public subnet AZ using for_each over var.infra_subnets, and set aws_route_table.route nat_gateway_id accordingly.
+# Terraform hint:
+#  locals { az_list = [for s in var.infra_subnets : s.az] }
+#  resource "aws_eip" "nat_eip" { for_each = toset(local.az_list) ... }
+#  resource "aws_nat_gateway" "nat" { for_each = aws_eip.nat_eip ... subnet_id = aws_subnet.infra_public_subnets[each.key].id }
 

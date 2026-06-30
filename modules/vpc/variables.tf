@@ -22,24 +22,28 @@ variable "infra_vpc_cidr" {
   description = "CIDR block for the VPC"
   type        = string
 }
-
-variable "infra_subnet_azs" {
-  description = "List of availability zones"
-  type        = list(string)
-}
-
-variable "infra_public_subnet_cidrs" {
-  description = "CIDRs for public subnets"
-  type        = list(string)
-}
-
-variable "infra_private_subnet_cidrs" {
-  description = "CIDRs for private subnets"
-  type        = list(string)
+variable "infra_subnets" {
+  type = map(object({
+    az           = string
+    public_cidr  = string
+    private_cidr = string
+  }))
 }
 
 variable "infra_tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
   default     = {}
+}
+
+variable "infra_bastion_cidr" {
+  description = "CIDR block for bastion host access (optional)."
+  type        = string
+  default     = null
+}
+
+variable "infra_bastion_sg_id" {
+  description = "Security Group ID of bastion host (optional, preferred)."
+  type        = string
+  default     = null
 }

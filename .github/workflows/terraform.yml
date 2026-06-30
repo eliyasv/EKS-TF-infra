@@ -1,0 +1,187 @@
+name: Terraform EKS CI/CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+      action:
+        description: 'Terraform action'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  TF_VERSION: '1.15.0'
+  AWS_REGION: 'us-east-1'
+
+jobs:
+  validate:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+    env:
+      TF_ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Prepare backend config
+        run: cp environments/${{ env.TF_ENVIRONMENT }}/backend.tf ./backend.tf
+
+      - name: Terraform init
+        run: terraform init -input=false -reconfigure
+
+      - name: Terraform fmt
+        run: terraform fmt -recursive -check
+
+      - name: Terraform validate
+        run: terraform validate
+
+  plan:
+    name: Terraform plan (IAM + EKS + IRSA)
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' && inputs.action != 'destroy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Prepare backend config
+        run: cp environments/${{ inputs.environment }}/backend.tf ./backend.tf
+
+      - name: Terraform init
+        run: terraform init -input=false -reconfigure
+
+      - name: Terraform plan IAM core
+        run: terraform plan -var-file=environments/${{ inputs.environment }}/${{ inputs.environment }}.tfvars -target=module.iam_core -out=tfplan-${{ inputs.environment }}-iam_core
+
+      - name: Terraform plan EKS
+        run: terraform plan -var-file=environments/${{ inputs.environment }}/${{ inputs.environment }}.tfvars -target=module.eks -out=tfplan-${{ inputs.environment }}-eks
+
+      - name: Terraform plan IRSA
+        run: terraform plan -var-file=environments/${{ inputs.environment }}/${{ inputs.environment }}.tfvars -target=module.iam_irsa -out=tfplan-${{ inputs.environment }}-irsa
+
+      - name: Upload plan artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plans-${{ inputs.environment }}
+          path: |
+            tfplan-${{ inputs.environment }}-iam_core
+            tfplan-${{ inputs.environment }}-eks
+            tfplan-${{ inputs.environment }}-irsa
+
+  apply:
+    name: Apply Terraform
+    needs: plan
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      TF_ENVIRONMENT: ${{ inputs.environment }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Prepare backend config
+        run: cp environments/${{ env.TF_ENVIRONMENT }}/backend.tf ./backend.tf
+
+      - name: Terraform init
+        run: terraform init -input=false -reconfigure
+
+      - name: Download plan artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plans-${{ env.TF_ENVIRONMENT }}
+          path: .
+
+      - name: Terraform apply IAM core
+        run: terraform apply -auto-approve tfplan-${{ env.TF_ENVIRONMENT }}-iam_core
+
+      - name: Terraform apply EKS
+        run: terraform apply -auto-approve tfplan-${{ inputs.environment }}-eks
+
+      - name: Terraform apply IRSA
+        run: terraform apply -auto-approve tfplan-${{ inputs.environment }}-irsa
+
+  destroy:
+    name: Destroy Terraform
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Prepare backend config
+        run: cp environments/${{ inputs.environment }}/backend.tf ./backend.tf
+
+      - name: Terraform init
+        run: terraform init -input=false -reconfigure
+
+      - name: Terraform destroy
+        run: terraform destroy -auto-approve -var-file=environments/${{ inputs.environment }}/${{ inputs.environment }}.tfvars

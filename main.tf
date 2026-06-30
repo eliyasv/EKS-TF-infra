@@ -3,6 +3,17 @@
 # Composes the infrastructure using VPC, IAM, and EKS modules
 ###################################
 
+# Build a consistent `infra_subnets` map when individual subnet lists are provided
+locals {
+  infra_subnets = var.infra_subnets != null ? var.infra_subnets : {
+    for idx, az in var.infra_subnet_azs : "subnet-${idx}" => {
+      az           = az
+      public_cidr  = var.infra_public_subnet_cidrs[idx]
+      private_cidr = var.infra_private_subnet_cidrs[idx]
+    }
+  }
+}
+
 # -----------------------------
 # VPC Module
 # -----------------------------
@@ -13,16 +24,16 @@ module "vpc" {
   infra_project_name         = var.infra_project_name
   infra_cluster_name         = var.infra_cluster_name
   infra_vpc_cidr             = var.infra_vpc_cidr
-  infra_public_subnet_cidrs  = var.infra_public_subnet_cidrs
-  infra_private_subnet_cidrs = var.infra_private_subnet_cidrs
-  infra_subnet_azs           = var.infra_subnet_azs
+  infra_subnets              = local.infra_subnets
+  infra_bastion_cidr         = var.infra_bastion_cidr
+  infra_bastion_sg_id       = var.infra_bastion_sg_id
   infra_tags                 = var.infra_tags
 }
 
 # -----------------------------
-# IAM Module
+# IAM Core Module (create core roles and attach policies)
 # -----------------------------
-module "iam" {
+module "iam_core" {
   source = "./modules/iam"
 
   infra_environment               = var.infra_environment
@@ -32,6 +43,7 @@ module "iam" {
   infra_create_eks_cluster_role   = var.infra_enable_control_plane_iam
   infra_create_eks_nodegroup_role = var.infra_enable_node_iam_roles
 
+  infra_use_managed_policies = true
 }
 
 # -----------------------------
@@ -55,9 +67,9 @@ module "eks" {
   public_subnet_ids  = module.vpc.public_subnet_ids
   eks_security_group_id = module.vpc.eks_security_group_id
 
-  # These values wait for IAM policy propagation
-  control_plane_iam_role_arn = module.iam.control_plane_iam_role_arn
-  node_group_iam_role_arn    = module.iam.node_group_iam_role_arn
+  # These values wait for IAM policy propagation (provided by iam_core)
+  control_plane_iam_role_arn = module.iam_core.control_plane_iam_role_arn
+  node_group_iam_role_arn    = module.iam_core.node_group_iam_role_arn
 
   infra_enable_ondemand_nodes     = var.infra_enable_ondemand_nodes
   infra_ondemand_instance_types   = var.infra_ondemand_instance_types
@@ -73,4 +85,27 @@ module "eks" {
   infra_eks_addons            = var.infra_eks_addons
 
   infra_tags                  = var.infra_tags
+}
+
+# -----------------------------
+# IAM IRSA Module (create IRSA roles after EKS and OIDC provider exist)
+# -----------------------------
+module "iam_irsa" {
+  source = "./modules/iam"
+
+  infra_environment  = var.infra_environment
+  infra_project_name = var.infra_project_name
+  infra_cluster_name = var.infra_cluster_name
+
+  infra_create_eks_cluster_role   = false
+  infra_create_eks_nodegroup_role = false
+  infra_enable_irsa = true
+  infra_irsa_role_name = "${var.infra_cluster_name}-irsa-role"
+  infra_irsa_policy_arns = []
+
+  # OIDC provider created by EKS module
+  infra_oidc_provider_arn = module.eks.oidc_provider_arn
+  infra_oidc_url          = module.eks.oidc_issuer_url
+
+  depends_on = [module.eks]
 }

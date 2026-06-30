@@ -39,3 +39,11 @@ output "iam_policies_propagated" {
   ]
 }
 
+output "irsa_role_arn" {
+  description = "ARN of the IRSA IAM role created by this module (if any)"
+  value       = try(aws_iam_role.ignite_irsa_role[0].arn, null)
+  depends_on = [
+    aws_iam_role_policy_attachment.ignite_irsa_policy_attachments
+  ]
+}
+

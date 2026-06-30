@@ -117,7 +117,7 @@ This project demonstrates Infrastructure as Code, Kubernetes platform provisioni
 * Terraform CLI
 * AWS IAM user with appropriate permissions
 * S3 bucket + DynamoDB table for remote state storing
-* Jenkins server configured with docker, terraform  plugins and credentials (for all relevant CI/CD jobs.) 
+* CI/CD environment with Terraform and AWS credentials.
 
 ---
 
@@ -126,27 +126,97 @@ This project demonstrates Infrastructure as Code, Kubernetes platform provisioni
 Infrastructure provisioning is automated using a Jenkins pipeline.
 The pipeline supports environment-based deployments and safe infrastructure changes.
 
-Pipeline Stages:
+Pipeline parameters:
 
-* Checkout repository
-* Prepare environment backend configuration
-* Terraform init
-* Terraform fmt
-* Terraform validate
-* Terraform plan
-* Manual approval (apply/destroy)
-* Terraform apply or destroy
+* `ENVIRONMENT`: `dev` or `prod`
+* `ACTION`: `plan`, `apply`, or `destroy`
 
-The pipeline uses parameterized builds:
+Pipeline stages and what they do:
 
-ENVIRONMENT:  dev/prod
-ACTION:  plan/apply/destroy
+* `Checkout`
+  * Clone the repository from the configured branch.
+* `Prepare Backend`
+  * Copy `environments/${params.ENVIRONMENT}/backend.tf` into the repo root.
+  * Ensures Terraform initializes with the correct S3/DynamoDB remote state backend for the selected environment.
+* `Terraform Init`
+  * Run `terraform init -reconfigure` to initialize providers, modules, and backend state.
+* `Terraform Format`
+  * Run `terraform fmt -recursive` to normalize HCL formatting across the repository.
+* `Terraform Validate`
+  * Run `terraform validate` to check syntax, providers, modules, and input requirements.
+* `Terraform Plan IAM Core`
+  * Create a targeted plan for `module.iam_core`.
+  * Verifies IAM role and policy changes before provisioning the cluster.
+* `Terraform Plan EKS`
+  * Create a targeted plan for `module.eks`.
+  * Verifies cluster and nodegroup changes after the IAM core stage.
+* `Terraform Plan IRSA`
+  * Create a targeted plan for `module.iam_irsa`.
+  * Verifies IRSA/OIDC-related IAM role changes after EKS has created the OIDC provider.
+* `Terraform Apply IAM Core`
+  * Manual approval step, then apply the IAM core plan.
+* `Terraform Apply EKS`
+  * Manual approval step, then apply the EKS plan.
+* `Terraform Apply IRSA`
+  * Manual approval step, then apply the IRSA plan.
+* `Terraform Destroy`
+  * Manual approval step, then destroy the selected environment.
 
-Infrastructure changes follow this workflow:
+This stage sequence is intentional: IAM core resources are created first, the EKS cluster is provisioned second, and IRSA-related IAM resources are provisioned last once the OIDC provider exists.
 
-Git Commit → Jenkins Pipeline → Terraform Plan → Approval → Apply → AWS EKS
+CI job split example (recommended for IAM/IRSA ordering):
 
-This workflow ensures infrastructure changes are validated before provisioning and provides controlled deployment of cloud resources.
+- Job 1 (IAM core): create IAM roles and attach policies
+
+```bash
+# from repo root
+cp environments/prod/backend.tf ./backend.tf
+terraform init -reconfigure
+terraform apply -var-file=environments/prod/prod.tfvars -target=module.iam_core -auto-approve
+```
+
+- Job 2 (EKS): create the EKS cluster (depends on IAM core)
+
+```bash
+cp environments/prod/backend.tf ./backend.tf
+terraform init -reconfigure
+terraform apply -var-file=environments/prod/prod.tfvars -target=module.eks -auto-approve
+```
+
+- Job 3 (IRSA & addons): create IRSA roles that require the OIDC provider, then install addons
+
+```bash
+cp environments/prod/backend.tf ./backend.tf
+terraform init -reconfigure
+terraform apply -var-file=environments/prod/prod.tfvars -target=module.iam_irsa -auto-approve
+# then optionally apply other modules or the full config
+terraform apply -var-file=environments/prod/prod.tfvars -auto-approve
+```
+
+Notes: using `-target` for staged deployment; prefer separate workspaces or module-level orchestration for long-term maintainability.
+
+### GitHub Actions workflow
+
+A GitHub Actions workflow is also included in `.github/workflows/terraform.yml`.
+This workflow mirrors the same staged deployment order as Jenkins and adds plan artifact reuse for the apply step.
+
+Workflow jobs:
+
+* `validate`
+  * Runs on `push`, `pull_request`, and manual dispatch.
+  * Checks out the repo, configures AWS credentials, initializes Terraform, runs `terraform fmt`, and validates the configuration.
+* `plan`
+  * Runs on manual dispatch when `action` is `plan`.
+  * Creates targeted plans for `module.iam_core`, `module.eks`, and `module.iam_irsa`.
+  * Uploads plan artifacts for later apply.
+* `apply`
+  * Runs on manual dispatch when `action` is `apply`.
+  * Downloads previously generated plan artifacts and applies the plans in order.
+* `destroy`
+  * Runs on manual dispatch when `action` is `destroy`.
+  * Destroys the selected environment.
+
+You can include both Jenkins and GitHub Actions in the README as separate subsections under a shared CI/Automation heading. This is a good general option when a repo supports multiple CI platforms.
 
 ---
 
@@ -351,4 +421,25 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 -  Security group allows 0.0.0.0/0 on 443 (restrict in production)
 -  IRSA policy uses wildcard permissions (apply least privilege in production)
 -  Current setup uses a single NAT Gateway for cost-efficiency. Production requires one per AZ for High Availability.
+
+Note: For production-grade deployments you should restrict API access to a bastion/jump host. Provide either `infra_bastion_sg_id` (preferred) or `infra_bastion_cidr` in your environment tfvars to lock the EKS SG down. Example in `environments/prod/prod.tfvars`:
+
+```hcl
+infra_bastion_sg_id = "sg-0123456789abcdef0"
+# or
+infra_bastion_cidr = "203.0.113.4/32"
+```
+
+High-availability NAT guidance (note: not implemented by default to reduce cost):
+
+To make NAT Gateways highly available, create one NAT Gateway per AZ and allocate one EIP per NAT. A Terraform pattern is to `for_each` over your AZs/subnets, create `aws_eip` per AZ, `aws_nat_gateway` per AZ, and then create route tables for private subnets that point to the NAT in the same AZ. This avoids a single egress point failure.
+
+Jenkins pipeline improvement suggestions:
+
+- Add static checks before `terraform plan`: `tfsec`, `checkov`, and `tflint` to catch security and style issues early.
+- Run `terraform fmt` and `terraform validate` (already present) and fail the build on format/validation errors.
+- Run `terraform plan` in a detached workspace and store plan artifacts as build artifacts; require manual approval for `apply` (already present).
+- Use ephemeral, isolated build agents (containerized) with pinned Terraform versions (use a docker image with TF and scanners preinstalled).
+- Use a dedicated service account/assume-role per environment and limit its permissions to least privilege (e.g., separate deploy role for `plan` and `apply`).
+- Add automated policy/remediation steps: post-plan checks to prevent destructive changes (e.g., deleting production resources).
 

@@ -61,6 +61,25 @@ variable "infra_subnet_azs" {
   type        = list(string)
 }
 
+variable "infra_subnets" {
+  description = "Optional map of subnet definitions. When provided, it takes precedence over separate CIDR lists.\nExample: { public-a = { az = \"us-east-1a\", public_cidr = \"10.0.0.0/24\", private_cidr = \"10.0.1.0/24\" } }"
+  type        = any
+  default     = null
+}
+
+# Bastion / Access control
+variable "infra_bastion_cidr" {
+  description = "CIDR block of the bastion/jump host allowed to access the cluster API (overrides open access)."
+  type        = string
+  default     = null
+}
+
+variable "infra_bastion_sg_id" {
+  description = "Security Group ID of the bastion/jump host to allow access from (preferred)."
+  type        = string
+  default     = null
+}
+
 # -----------------------------
 # IAM Module Inputs
 # -----------------------------
