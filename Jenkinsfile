@@ -67,71 +67,27 @@ pipeline {
 
 
 
-    stage('Terraform Plan IAM Core') {
+    stage('Terraform Plan Full') {
       when {
         expression { params.ACTION == 'plan' || params.ACTION == 'apply' }
       }
       steps {
         withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-          sh "terraform plan -var-file=environments/${params.ENVIRONMENT}/${params.ENVIRONMENT}.tfvars -target=module.iam_core -out=tfplan-${params.ENVIRONMENT}-iam_core"
+          // Full plan without targeting (allows Terraform to resolve all dependencies)
+          sh "terraform plan -var-file=environments/${params.ENVIRONMENT}/${params.ENVIRONMENT}.tfvars -out=tfplan-${params.ENVIRONMENT}-full"
         }
       }
     }
 
-    stage('Terraform Plan EKS') {
-      when {
-        expression { params.ACTION == 'plan' || params.ACTION == 'apply' }
-      }
-      steps {
-        withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-          sh "terraform plan -var-file=environments/${params.ENVIRONMENT}/${params.ENVIRONMENT}.tfvars -target=module.eks -out=tfplan-${params.ENVIRONMENT}-eks"
-        }
-      }
-    }
-
-    stage('Terraform Plan IRSA') {
-      when {
-        expression { params.ACTION == 'plan' || params.ACTION == 'apply' }
-      }
-      steps {
-        withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-          sh "terraform plan -var-file=environments/${params.ENVIRONMENT}/${params.ENVIRONMENT}.tfvars -target=module.iam_irsa -out=tfplan-${params.ENVIRONMENT}-irsa"
-        }
-      }
-    }
-
-    stage('Terraform Apply IAM Core') {
+    stage('Terraform Apply Full') {
       when {
         expression { params.ACTION == 'apply' }
       }
       steps {
         withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-          input message: "Approve IAM Core apply for ${params.ENVIRONMENT}?", ok: "Apply IAM Core"
-          sh "terraform apply -auto-approve tfplan-${params.ENVIRONMENT}-iam_core"
-        }
-      }
-    }
-
-    stage('Terraform Apply EKS') {
-      when {
-        expression { params.ACTION == 'apply' }
-      }
-      steps {
-        withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-          input message: "Approve EKS apply for ${params.ENVIRONMENT}?", ok: "Apply EKS"
-          sh "terraform apply -auto-approve tfplan-${params.ENVIRONMENT}-eks"
-        }
-      }
-    }
-
-    stage('Terraform Apply IRSA') {
-      when {
-        expression { params.ACTION == 'apply' }
-      }
-      steps {
-        withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-          input message: "Approve IRSA apply for ${params.ENVIRONMENT}?", ok: "Apply IRSA"
-          sh "terraform apply -auto-approve tfplan-${params.ENVIRONMENT}-irsa"
+          // Single comprehensive approval for all infrastructure
+          input message: "Approve infrastructure deployment for ${params.ENVIRONMENT}? This will create: IAM roles, VPC, EKS cluster, and node groups.", ok: "Apply All"
+          sh "terraform apply -auto-approve tfplan-${params.ENVIRONMENT}-full"
         }
       }
     }
