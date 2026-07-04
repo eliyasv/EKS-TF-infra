@@ -72,7 +72,7 @@ resource "aws_eip" "infra_nat_eip" {
 # Create a NAT Gateway in the public subnet (allows private subnet instances internet access).
 resource "aws_nat_gateway" "infra_nat_gw" {
   allocation_id = aws_eip.infra_nat_eip[0].id # currently set up on one az only, in prod it is required for all az.
-  subnet_id = aws_subnet.infra_public_subnets["public-a"].id  # NAT Gateway must be in a public subnet to provide internet access
+  subnet_id     = aws_subnet.infra_public_subnets[sort(keys(aws_subnet.infra_public_subnets))[0]].id  # NAT Gateway must be in a public subnet to provide internet access
 
   tags = merge(var.infra_tags, {
     Name = "${var.infra_environment}-${var.infra_project_name}-nat-gw"
