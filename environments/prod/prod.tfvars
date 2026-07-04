@@ -2,6 +2,7 @@
 infra_environment  = "prod" #name given for choice in pipline
 infra_region       = "us-east-1"
 infra_project_name = "project-ignite"
+infra_cluster_name = "ignite-cluster-prod"
 
 # VPC Configuration
 infra_vpc_cidr             = "10.200.0.0/16"
