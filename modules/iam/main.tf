@@ -107,7 +107,7 @@ resource "aws_iam_role" "ignite_irsa_role" {
 
   name = var.infra_irsa_role_name != "" ? var.infra_irsa_role_name : "${var.infra_cluster_name}-irsa-role"
 
-  assume_role_policy = data.aws_iam_policy_document.eks_oidc_assume_role_policy.json
+  assume_role_policy = data.aws_iam_policy_document.eks_oidc_assume_role_policy[0].json
 
   tags = {
     Name        = var.infra_irsa_role_name != "" ? var.infra_irsa_role_name : "${var.infra_cluster_name}-irsa-role"
