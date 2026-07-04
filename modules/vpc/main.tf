@@ -177,7 +177,7 @@ resource "aws_security_group_rule" "allow_https_from_bastion_cidr" {
   description = "Allow HTTPS from bastion CIDR"
 }
 
-# Fallback (not recommended): if no bastion CIDR/SG provided, open HTTPS to the world.
+# Fallback (not recommended): if no bastion CIDR/SG provided (like this case), open HTTPS to the world.
 resource "aws_security_group_rule" "allow_https_open" {
   count = var.infra_bastion_sg_id == null && (var.infra_bastion_cidr == null || var.infra_bastion_cidr == "") ? 1 : 0
   type = "ingress"
