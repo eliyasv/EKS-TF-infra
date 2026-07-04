@@ -103,11 +103,11 @@ resource "aws_iam_role_policy_attachment" "ignite_nodegroup_custom" {
 
 # IRSA role: create a role assumable by the EKS OIDC provider for a specific service account
 resource "aws_iam_role" "ignite_irsa_role" {
-  count = var.infra_enable_irsa && var.infra_oidc_provider_arn != null ? 1 : 0
+  count = var.infra_enable_irsa ? 1 : 0
 
   name = var.infra_irsa_role_name != "" ? var.infra_irsa_role_name : "${var.infra_cluster_name}-irsa-role"
 
-  assume_role_policy = try(data.aws_iam_policy_document.eks_oidc_assume_role_policy[0].json, jsonencode({} ))
+  assume_role_policy = data.aws_iam_policy_document.eks_oidc_assume_role_policy.json
 
   tags = {
     Name        = var.infra_irsa_role_name != "" ? var.infra_irsa_role_name : "${var.infra_cluster_name}-irsa-role"

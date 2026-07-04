@@ -1,7 +1,7 @@
 #Allows federated access by the EKS cluster's OIDC provider, limited to a specific Kubernetes service account.
+# NOTE: This data source is unconditional. The condition is applied at the resource level.
+# Using count here causes issues with unknown values during terraform plan when OIDC values come from other resources.
 data "aws_iam_policy_document" "eks_oidc_assume_role_policy" {
-  count = var.infra_enable_irsa && var.infra_oidc_provider_arn != null && var.infra_oidc_url != null ? 1 : 0
-
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
     effect  = "Allow"
