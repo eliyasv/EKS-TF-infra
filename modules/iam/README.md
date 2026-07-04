@@ -59,9 +59,6 @@ Example minimal custom policy snippets
 +  ]
 +}
 +
-+Notes and assumptions
-+
+
 +- The examples above are starting points — validate in a non-production environment before rolling out.
 +- Some EKS operations require broad `Describe*` permissions against EC2 and other services; keep `Describe*` actions if needed since they are read-only.
-+- It's recommended to manage custom policies centrally (single account) and reference their ARNs when calling this module.
-+- If you need help producing a complete least-privilege set for your environment, I can help craft them based on your EKS addons and integrations.

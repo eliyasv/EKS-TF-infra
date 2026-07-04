@@ -31,7 +31,9 @@ resource "aws_eks_cluster" "ignite_cluster" {
     Env  = var.infra_environment
   })
 
-
+  #lifecycle {
+  #  prevent_destroy = true
+  #}
 
   # Ensure IAM policies for the cluster are attached before creation
   # Dependencies on IAM roles are provided implicitly via module inputs (role ARNs)
