@@ -123,3 +123,4 @@ resource "aws_iam_role_policy_attachment" "ignite_irsa_policy_attachments" {
   policy_arn = each.value
 }
 
+# This module creates IAM roles for the EKS control plane and EKS node groups. By default it attaches AWS-managed policies for compatibility. For production and security-conscious deployments you should replace managed policies with narrowly scoped custom policies.
