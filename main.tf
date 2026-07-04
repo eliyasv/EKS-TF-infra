@@ -58,10 +58,9 @@ module "eks" {
   infra_cluster_name    = var.infra_cluster_name
   infra_cluster_version = var.infra_cluster_version
 
-  infra_enable_eks                  = var.infra_enable_eks
-  infra_enable_private_access       = var.infra_enable_private_access
-  infra_enable_public_access        = var.infra_enable_public_access
-  infra_cluster_authentication_mode = var.infra_cluster_authentication_mode
+  infra_enable_eks            = var.infra_enable_eks
+  infra_enable_private_access = var.infra_enable_private_access
+  infra_enable_public_access  = var.infra_enable_public_access
 
   vpc_id                = module.vpc.vpc_id
   private_subnet_ids    = module.vpc.private_subnet_ids

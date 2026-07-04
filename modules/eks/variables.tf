@@ -53,12 +53,6 @@ variable "infra_enable_public_access" {
   default     = false
 }
 
-variable "infra_cluster_authentication_mode" {
-  description = "EKS authentication mode for Kubernetes API authentication."
-  type        = string
-  default     = "API_AND_CONFIG_MAP"
-}
-
 variable "vpc_id" {
   description = "VPC ID for the EKS cluster"
   type        = string

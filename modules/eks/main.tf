@@ -25,15 +25,16 @@ resource "aws_eks_cluster" "ignite_cluster" {
     security_group_ids      = [var.eks_security_group_id]
   }
 
-  access_config {
-    authentication_mode = var.infra_cluster_authentication_mode
-  }
-
   # Tags for better resource management
   tags = merge(var.infra_tags, {
     Name = var.infra_cluster_name
     Env  = var.infra_environment
   })
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
   # Ensure IAM policies for the cluster are attached before creation
   # Dependencies on IAM roles are provided implicitly via module inputs (role ARNs)
 }
