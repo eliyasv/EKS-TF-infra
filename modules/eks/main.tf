@@ -6,23 +6,27 @@
 
 resource "aws_eks_cluster" "ignite_cluster" {
   # Count condition - creates the cluster only if enabled by variable
-  count    = var.infra_enable_eks ? 1 : 0
+  count = var.infra_enable_eks ? 1 : 0
 
   # Name of the EKS cluster (comes from variable, which is fed from dev/env)
-  name     = var.infra_cluster_name
+  name = var.infra_cluster_name
 
   # IAM role used by the EKS control plane to call other AWS services
   role_arn = var.control_plane_iam_role_arn
 
   # Kubernetes version to run for this cluster
-  version  = var.infra_cluster_version
+  version = var.infra_cluster_version
 
   # Networking configuration for the cluster
   vpc_config {
-    subnet_ids              = var.private_subnet_ids # subnets from different AZs recomended
+    subnet_ids              = var.private_subnet_ids          # subnets from different AZs recomended
     endpoint_private_access = var.infra_enable_private_access # private  endpoint
     endpoint_public_access  = var.infra_enable_public_access  # public  endpoint
     security_group_ids      = [var.eks_security_group_id]
+  }
+
+  access_config {
+    authentication_mode = var.infra_cluster_authentication_mode
   }
 
   # Tags for better resource management
@@ -37,14 +41,14 @@ resource "aws_eks_cluster" "ignite_cluster" {
 # Node Group: On-Demand Instances
 resource "aws_eks_node_group" "ignite_ondemand_nodes" {
   count           = var.infra_enable_ondemand_nodes ? 1 : 0
-  cluster_name    = aws_eks_cluster.ignite_cluster[0].name 
+  cluster_name    = aws_eks_cluster.ignite_cluster[0].name
   node_group_name = "${var.infra_cluster_name}-ondemand"
 
   # IAM role for worker nodes (allows them to talk to other AWS services)
   node_role_arn = var.node_group_iam_role_arn
 
   # Place node instances in private subnets (best practice for security)
-  subnet_ids    = var.private_subnet_ids
+  subnet_ids = var.private_subnet_ids
 
   # Scaling configuration: desired, min & max node count
   scaling_config {
@@ -129,7 +133,7 @@ resource "aws_eks_addon" "ignite_addons" {
   addon_version = each.value.version
 
   # Wait until node groups are ready before installing addons
-  depends_on    = [
+  depends_on = [
     aws_eks_node_group.ignite_ondemand_nodes,
     aws_eks_node_group.ignite_spot_nodes
   ]
@@ -146,7 +150,7 @@ data "tls_certificate" "oidc_thumbprint" {
 
 resource "aws_iam_openid_connect_provider" "ignite_eks_oidc_provider" {
   count = var.infra_enable_eks ? 1 : 0
-  
+
   url             = aws_eks_cluster.ignite_cluster[0].identity[0].oidc[0].issuer
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.oidc_thumbprint[0].certificates[0].sha1_fingerprint]

@@ -122,6 +122,17 @@ variable "infra_enable_public_access" {
   default     = false
 }
 
+variable "infra_cluster_authentication_mode" {
+  description = "EKS authentication mode. Use API_AND_CONFIG_MAP to allow EKS access entries while keeping aws-auth compatibility."
+  type        = string
+  default     = "API_AND_CONFIG_MAP"
+
+  validation {
+    condition     = contains(["CONFIG_MAP", "API_AND_CONFIG_MAP", "API"], var.infra_cluster_authentication_mode)
+    error_message = "infra_cluster_authentication_mode must be one of CONFIG_MAP, API_AND_CONFIG_MAP, or API."
+  }
+}
+
 # -----------------------------
 # On-Demand Node Group
 # -----------------------------
