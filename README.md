@@ -23,10 +23,21 @@ This project demonstrates Infrastructure as Code, Kubernetes platform provisioni
 *  Single NAT Gateway (Cost-optimized for Dev; upgrade to Multi-NAT for Prod)
 *  Spot and On-Demand node groups for cost optimization
 *  Secure EKS cluster (private API access)
-*  OIDC Provider & IRSA enabled (Consolidated within EKS module)
+*  OIDC provider created by the EKS module, with IRSA role support via the IAM module
 *  Configurable EKS add-ons
 *  CI/CD ready with Jenkins pipeline for safe plan/apply/destroy
 *  Remote S3 backend with state locking via DynamoDB
+
+---
+
+### Proof of Successful Deployment
+
+| Check | Evidence |
+|------|----------|
+| EKS cluster active | ![EKS cluster active](docs/assets/ekscluster.png) |
+| Managed node groups active | ![Managed node groups active](docs/assets/nodegroup.png) |
+| Nodes visible through kubectl | ![kubectl get nodes](docs/assets/nodes.png) |
+| Jenkins pipeline completed | ![Jenkins pipeline success](docs/assets/jenkins.png) |
 
 ---
 
@@ -123,8 +134,8 @@ This project demonstrates Infrastructure as Code, Kubernetes platform provisioni
 
 ### CI Pipeline (Jenkins)
 
-Infrastructure provisioning is automated using a Jenkins pipeline.
-The pipeline supports environment-based deployments and safe infrastructure changes.
+Infrastructure provisioning is automated using the root `Jenkinsfile`.
+The current Jenkins pipeline uses a full Terraform plan/apply flow for the selected environment.
 
 Pipeline parameters:
 
@@ -137,68 +148,33 @@ Pipeline stages and what they do:
   * Clone the repository from the configured branch.
 * `Prepare Backend`
   * Copy `environments/${params.ENVIRONMENT}/backend.tf` into the repo root.
-  * Ensures Terraform initializes with the correct S3/DynamoDB remote state backend for the selected environment.
+  * Ensures Terraform initializes with the correct remote state backend for the selected environment.
 * `Terraform Init`
   * Run `terraform init -reconfigure` to initialize providers, modules, and backend state.
 * `Terraform Format`
-  * Run `terraform fmt -recursive` to normalize HCL formatting across the repository.
+  * Run `terraform fmt -recursive` to normalize HCL formatting.
 * `Terraform Validate`
   * Run `terraform validate` to check syntax, providers, modules, and input requirements.
-* `Terraform Plan IAM Core`
-  * Create a targeted plan for `module.iam_core`.
-  * Verifies IAM role and policy changes before provisioning the cluster.
-* `Terraform Plan EKS`
-  * Create a targeted plan for `module.eks`.
-  * Verifies cluster and nodegroup changes after the IAM core stage.
-* `Terraform Plan IRSA`
-  * Create a targeted plan for `module.iam_irsa`.
-  * Verifies IRSA/OIDC-related IAM role changes after EKS has created the OIDC provider.
-* `Terraform Apply IAM Core`
-  * Manual approval step, then apply the IAM core plan.
-* `Terraform Apply EKS`
-  * Manual approval step, then apply the EKS plan.
-* `Terraform Apply IRSA`
-  * Manual approval step, then apply the IRSA plan.
+* `Terraform Plan Full`
+  * Create one full plan using `environments/${ENVIRONMENT}/${ENVIRONMENT}.tfvars`.
+  * Save the plan as `tfplan-${ENVIRONMENT}-full`.
+* `Terraform Apply Full`
+  * Manual approval step, then apply the saved full plan.
 * `Terraform Destroy`
-  * Manual approval step, then destroy the selected environment.
+  * Manual approval step, then run `terraform destroy` for the selected environment.
 
-This stage sequence is intentional: IAM core resources are created first, the EKS cluster is provisioned second, and IRSA-related IAM resources are provisioned last once the OIDC provider exists.
+Before approving an apply, review the plan carefully. Do not approve a plan that unexpectedly says:
 
-CI job split example (recommended for IAM/IRSA ordering):
-
-- Job 1 (IAM core): create IAM roles and attach policies
-
-```bash
-# from repo root
-cp environments/prod/backend.tf ./backend.tf
-terraform init -reconfigure
-terraform apply -var-file=environments/prod/prod.tfvars -target=module.iam_core -auto-approve
+```text
+module.eks.aws_eks_cluster.ignite_cluster[0] must be replaced
 ```
 
-- Job 2 (EKS): create the EKS cluster (depends on IAM core)
-
-```bash
-cp environments/prod/backend.tf ./backend.tf
-terraform init -reconfigure
-terraform apply -var-file=environments/prod/prod.tfvars -target=module.eks -auto-approve
-```
-
-- Job 3 (IRSA & addons): create IRSA roles that require the OIDC provider, then install addons
-
-```bash
-cp environments/prod/backend.tf ./backend.tf
-terraform init -reconfigure
-terraform apply -var-file=environments/prod/prod.tfvars -target=module.iam_irsa -auto-approve
-# then optionally apply other modules or the full config
-terraform apply -var-file=environments/prod/prod.tfvars -auto-approve
-```
-
-Notes: using `-target` for staged deployment; prefer separate workspaces or module-level orchestration for long-term maintainability.
+or shows an unexpected destroy of the EKS cluster, VPC, node groups, or IAM roles. For existing clusters, avoid Terraform changes that force EKS control plane replacement unless you intentionally want to rebuild.
 
 ### GitHub Actions workflow
 
 A GitHub Actions workflow is also included in `.github/workflows/terraform.yml`.
-This workflow mirrors the same staged deployment order as Jenkins and adds plan artifact reuse for the apply step.
+This workflow uses targeted plan artifacts for IAM core, EKS, and IRSA, then applies those artifacts in order.
 
 Workflow jobs:
 
@@ -216,20 +192,70 @@ Workflow jobs:
   * Runs on manual dispatch when `action` is `destroy`.
   * Destroys the selected environment.
 
-You can include both Jenkins and GitHub Actions in the README as separate subsections under a shared CI/Automation heading. This is a good general option when a repo supports multiple CI platforms.
-
 ---
 
 ### Accessing the Cluster
 
+The cluster endpoint is private by default. Run `kubectl` from a jump server or Jenkins host that can reach the VPC. Network access alone is not enough: the IAM user or role must also be authorized in EKS.
+
 ```bash
-#Get kubeconfig
+# Get kubeconfig on the machine that will run kubectl
 aws eks update-kubeconfig --region us-east-1 --name ignite-cluster-dev
-#Verify access
+
+# Verify current AWS principal
+aws sts get-caller-identity
+
+# Verify Kubernetes access
 kubectl get nodes
-# Deploy sample app
-kubectl apply -f https://k8s.io/examples/application/deployment.yaml
 ```
+
+If `kubectl` tries to reach `http://localhost:8080`, kubeconfig is missing. Re-run `aws eks update-kubeconfig` on the jump server.
+
+If `kubectl` says `the server has asked for the client to provide credentials`, kubeconfig exists but the IAM principal is not authorized in EKS yet.
+
+Enable EKS access entries for the current cluster:
+
+```bash
+aws eks update-cluster-config \
+  --region us-east-1 \
+  --name ignite-cluster-dev \
+  --access-config authenticationMode=API_AND_CONFIG_MAP
+```
+
+Grant access to your AWS console IAM user/role:
+
+```bash
+aws eks create-access-entry \
+  --region us-east-1 \
+  --cluster-name ignite-cluster-dev \
+  --principal-arn <YOUR_IAM_USER_OR_ROLE_ARN>
+
+aws eks associate-access-policy \
+  --region us-east-1 \
+  --cluster-name ignite-cluster-dev \
+  --principal-arn <YOUR_IAM_USER_OR_ROLE_ARN> \
+  --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy \
+  --access-scope type=cluster
+```
+
+For a jump server or Jenkins EC2 instance role, use the base IAM role ARN, not the STS assumed-role session ARN. Example:
+
+```bash
+aws eks create-access-entry \
+  --region us-east-1 \
+  --cluster-name ignite-cluster-dev \
+  --principal-arn arn:aws:iam::495599741234:role/Jenkinsrole
+
+aws eks associate-access-policy \
+  --region us-east-1 \
+  --cluster-name ignite-cluster-dev \
+  --principal-arn arn:aws:iam::495599741234:role/Jenkinsrole \
+  --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy \
+  --access-scope type=cluster
+```
+
+For production, replace `AmazonEKSClusterAdminPolicy` with narrower policies/roles.
+
 ---
 
 ### Folder Structure
@@ -262,7 +288,6 @@ kubectl apply -f https://k8s.io/examples/application/deployment.yaml
 │       ├── outputs.tf
 │       └── variables.tf
 ├── outputs.tf
-├── data.tf
 ├── providers.tf
 ├── README.md
 └── variables.tf
@@ -275,19 +300,27 @@ kubectl apply -f https://k8s.io/examples/application/deployment.yaml
 
 ### Remote Backend Configuration
 
-Edit `backend.tf` to match your S3 and DynamoDB setup:
+Each environment has its own backend config in `environments/<env>/backend.tf`. Copy the selected backend file to the repo root before running Terraform locally:
+
+```bash
+cp environments/dev/backend.tf ./backend.tf
+```
+
+Example S3 backend:
 
 ```hcl
 terraform {
   backend "s3" {
-    bucket         = "bucketname"
-    key            = "path to terraform.tfstate"
+    bucket         = "project-ignite-tfstate-YOUR-ID"
+    key            = "dev/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "lock"
+    dynamodb_table = "project-ignite-locks"
     encrypt        = true
   }
 }
 ```
+
+Note: Newer Terraform versions warn that `dynamodb_table` is deprecated in favor of S3 lockfiles. This repository currently still uses DynamoDB locking; update both backend files together if you migrate to `use_lockfile`.
 
 ---
 
@@ -296,13 +329,13 @@ terraform {
 You can override values in `dev.tfvars` or `prod.tfvars`. Example:
 
 ```hcl
-# environments/dev.tfvars
-infra_environment       = "dev"
-infra_region            = "us-east-1"
-infra_vpc_cidr          = "10.10.0.0/16"
-infra_cluster_name      = "dev-project-ignite-cluster"
-infra_enable_eks        = true
-infra_cluster_version       = "1.30"
+# environments/dev/dev.tfvars
+infra_environment     = "dev"
+infra_region          = "us-east-1"
+infra_vpc_cidr        = "10.100.0.0/16"
+infra_cluster_name    = "ignite-cluster-dev"
+infra_enable_eks      = true
+infra_cluster_version = "1.30"
 ...
 ```
 
@@ -345,12 +378,33 @@ This Terraform configuration deploys a production-ready EKS cluster named ignite
 
 ```bash
 
-# Destroy dev
-terraform destroy -var-file=environments/dev/dev.tfvars
-
-# Clean up
-rm backend.tf
+# Clean up local copied backend file after the run if desired
+rm -f backend.tf
 ```
+
+### Destroy and Rebuild Later
+
+For temporary shutdown in dev, keep the S3 state bucket and DynamoDB lock table. Destroying those backend resources removes Terraform's state history and makes rebuild/cleanup harder.
+
+If the EKS cluster has a lifecycle guard enabled, remove or comment it only for the intentional destroy:
+
+```hcl
+lifecycle {
+  prevent_destroy = true
+}
+```
+
+Then run:
+
+```bash
+cp environments/dev/backend.tf ./backend.tf
+terraform init -reconfigure
+terraform destroy -var-file=environments/dev/dev.tfvars
+rm -f backend.tf
+```
+
+Before rebuilding later, restore the lifecycle guard if you want protection against accidental cluster replacement. After rebuild, recreate EKS access entries for your console principal and jump/Jenkins role because access entries belong to the old cluster and are removed with it.
+
 ### Switching Between Environments (e.g. prod)
 
 ```bash
@@ -396,7 +450,7 @@ eksctl create iamserviceaccount \
     --approve
 ```    
 
-* Install AWS Load Balencer with helm (install helm if haven't already)
+* Install AWS Load Balancer Controller with Helm (install Helm if you haven't already)
 
 ```bash
 
@@ -442,4 +496,3 @@ Jenkins pipeline improvement suggestions:
 - Use ephemeral, isolated build agents (containerized) with pinned Terraform versions (use a docker image with TF and scanners preinstalled).
 - Use a dedicated service account/assume-role per environment and limit its permissions to least privilege (e.g., separate deploy role for `plan` and `apply`).
 - Add automated policy/remediation steps: post-plan checks to prevent destructive changes (e.g., deleting production resources).
-

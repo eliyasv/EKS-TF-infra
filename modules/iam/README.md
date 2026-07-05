@@ -6,8 +6,8 @@ How to use custom policies
 
 - Set `infra_use_managed_policies = false` in your root `tfvars`.
 - Provide ARNs for custom policies you manage in your account using the variables:
-  - `infra_control_plane_custom_policy_arns` - list of ARNs to attach to control plane role
-  - `infra_nodegroup_custom_policy_arns` - list of ARNs to attach to node group role
+- `infra_control_plane_custom_policy_arns` - list of ARNs to attach to control plane role
+- `infra_nodegroup_custom_policy_arns` - list of ARNs to attach to node group role
 
 Why this approach
 
@@ -50,15 +50,15 @@ Example minimal custom policy snippets
         "ec2:DescribeInstances"
       ],
       "Resource": "*",
-+      "Condition": {
-+        "StringEquals": {
-+          "ec2:ResourceTag/kubernetes.io/cluster/${cluster_name}": "owned"
-+        }
-+      }
-+    }
-+  ]
-+}
-+
+       "Condition": {
+         "StringEquals": {
+           "ec2:ResourceTag/kubernetes.io/cluster/${cluster_name}": "owned"
+         }
+       }
+     }
+   ]
+ }
 
-+- The examples above are starting points — validate in a non-production environment before rolling out.
-+- Some EKS operations require broad `Describe*` permissions against EC2 and other services; keep `Describe*` actions if needed since they are read-only.
+
+- The examples above are starting points — validate in a non-production environment before rolling out.
+- Some EKS operations require broad `Describe*` permissions against EC2 and other services; keep `Describe*` actions if needed since they are read-only.
