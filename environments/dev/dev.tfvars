@@ -11,10 +11,10 @@ infra_private_subnet_cidrs = ["10.100.128.0/20", "10.100.144.0/20", "10.100.160.
 infra_subnet_azs           = ["us-east-1a", "us-east-1b", "us-east-1c"]
 
 # EKS Cluster Configuration
-infra_enable_eks          = true
-infra_cluster_version     = "1.30"
-infra_enable_private_access  = true
-infra_enable_public_access   = false
+infra_enable_eks            = true
+infra_cluster_version       = "1.30"
+infra_enable_private_access = true
+infra_enable_public_access  = false
 
 # Node Group Configuration (On-Demand)
 infra_enable_ondemand_nodes     = true

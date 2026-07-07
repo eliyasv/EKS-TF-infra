@@ -8,7 +8,7 @@ terraform {
 
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
+      source = "hashicorp/aws"
       # Pinned AWS provider to major version 5
       version = "~> 5.0"
     }

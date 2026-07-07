@@ -424,12 +424,16 @@ With Ingress, you can use one entry point (like a single door) and let rules dec
 
 Ingress doesn’t handle traffic itself; it needs an Ingress Controller.
 
+> Note: This Terraform project provisions the EKS cluster, node groups, OIDC provider, and EKS managed add-ons, but it does not install the AWS Load Balancer Controller. The companion app repo uses ALB annotations in `k8s/ingress.yaml`, so install the AWS Load Balancer Controller before applying application ingress resources.
+
 * Access the eks by jumpserver (created inside the vpc with appropriate sg rules)
 
 
 ```bash
 
 # IAM OIDC provider is already setup using terraform.
+# Run these commands from a host that can reach the private EKS endpoint,
+# such as the jump server or Jenkins host inside the VPC.
 
 # Download IAM policy for the Load Balancer Controller
 curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.11.0/docs/install/iam_policy.json
@@ -441,16 +445,16 @@ aws iam create-policy \
 
 # Create an IAM service account in Kubernetes with the policy attached (Replace the values for cluster name, region code, and account ID)
 eksctl create iamserviceaccount \
-    --cluster=<cluster-name> \
+    --cluster=ignite-cluster-dev \
     --namespace=kube-system \
     --name=aws-load-balancer-controller \
     --attach-policy-arn=arn:aws:iam::<AWS_ACCOUNT_ID>:policy/AWSLoadBalancerControllerIAMPolicy \
     --override-existing-serviceaccounts \
-    --region <aws-region-code> \
+    --region us-east-1 \
     --approve
 ```    
 
-* Install AWS Load Balancer Controller with Helm (install Helm if you haven't already)
+* Install AWS Load Balancer Controller with Helm. Install `helm` and `eksctl` on the jump server first if they are not already available.
 
 ```bash
 
@@ -459,13 +463,58 @@ helm repo update eks
  
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
-  --set clusterName=my-cluster \
+  --set clusterName=ignite-cluster-dev \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller \
   --version 1.13.0
 
 # helm install command automatically installs the custom resource definitions (CRDs) for the controller.
 ```
+
+Verify the controller before applying the app ingress:
+
+```bash
+kubectl get deployment -n kube-system aws-load-balancer-controller
+kubectl logs -n kube-system deployment/aws-load-balancer-controller
+kubectl apply -f ../EKS-TF-3tier-app/k8s/ingress.yaml
+kubectl get ingress -n mern-app -w
+```
+
+### Configuring Metrics Server for HPA
+
+This Terraform project does not install Metrics Server. Install it before applying the companion app repo's `k8s/hpa.yaml`; without it, the HorizontalPodAutoscaler cannot read CPU or memory metrics.
+
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+kubectl wait --for=condition=available deployment/metrics-server -n kube-system --timeout=300s
+kubectl top nodes
+kubectl top pods -A
+```
+
+### Configuring External Secrets IRSA
+
+This Terraform project creates an IAM policy and IRSA role for External Secrets Operator to read the MERN app MongoDB secrets from AWS Secrets Manager. The output is:
+
+```bash
+terraform output -raw external_secrets_irsa_role_arn
+```
+
+Install External Secrets Operator with that role annotated on the `external-secrets` service account:
+
+```bash
+EXTERNAL_SECRETS_ROLE_ARN=$(terraform output -raw external_secrets_irsa_role_arn)
+
+helm repo add external-secrets https://charts.external-secrets.io
+helm repo update external-secrets
+
+helm upgrade --install external-secrets external-secrets/external-secrets \
+  -n external-secrets \
+  --create-namespace \
+  --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="${EXTERNAL_SECRETS_ROLE_ARN}"
+```
+
+The role trust policy is tied to `system:serviceaccount:external-secrets:external-secrets`. If you install the operator with a different namespace or service account name, update `infra_irsa_subject` in `main.tf` before applying Terraform.
+
 ### Security Considerations
      
 -  Private API endpoint (no public access)
