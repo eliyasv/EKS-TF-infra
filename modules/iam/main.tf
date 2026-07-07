@@ -4,9 +4,9 @@
 
 # EKS Control Plane IAM Role (essential for tying the EKS-managed Kubernetes API/control plane to AWS resources, safely delegating infrastructure tasks to EKS.)
 resource "aws_iam_role" "ignite_eks_cluster_role" {
-  count              = var.infra_create_eks_cluster_role ? 1 : 0
-  name               = "${var.infra_cluster_name}-eks-cluster-role"
- 
+  count = var.infra_create_eks_cluster_role ? 1 : 0
+  name  = "${var.infra_cluster_name}-eks-cluster-role"
+
   # This trust policy allows the EKS control plane to assume the role
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -35,17 +35,17 @@ resource "aws_iam_role_policy_attachment" "ignite_eks_cluster_policy" {
 
 # Attach any user-provided control plane custom policies when managed policies are disabled
 resource "aws_iam_role_policy_attachment" "ignite_eks_cluster_custom" {
-  for_each = toset(var.infra_create_eks_cluster_role && !var.infra_use_managed_policies ? var.infra_control_plane_custom_policy_arns : [])
-  role     = aws_iam_role.ignite_eks_cluster_role[0].name
+  for_each   = toset(var.infra_create_eks_cluster_role && !var.infra_use_managed_policies ? var.infra_control_plane_custom_policy_arns : [])
+  role       = aws_iam_role.ignite_eks_cluster_role[0].name
   policy_arn = each.value
 }
 
 # Nodegroup IAM Role (for EKS worker nodes)
 resource "aws_iam_role" "ignite_eks_nodegroup_role" {
-  count              = var.infra_create_eks_nodegroup_role ? 1 : 0
-  name               = "${var.infra_cluster_name}-eks-nodegroup-role"
+  count = var.infra_create_eks_nodegroup_role ? 1 : 0
+  name  = "${var.infra_cluster_name}-eks-nodegroup-role"
 
-# Allows EC2 service to assume this role for the worker nodes
+  # Allows EC2 service to assume this role for the worker nodes
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -96,8 +96,8 @@ resource "aws_iam_role_policy_attachment" "ignite_nodegroup_ebs_policy" {
 
 # Attach any user-provided nodegroup custom policies when managed policies are disabled
 resource "aws_iam_role_policy_attachment" "ignite_nodegroup_custom" {
-  for_each = toset(var.infra_create_eks_nodegroup_role && !var.infra_use_managed_policies ? var.infra_nodegroup_custom_policy_arns : [])
-  role     = aws_iam_role.ignite_eks_nodegroup_role[0].name
+  for_each   = toset(var.infra_create_eks_nodegroup_role && !var.infra_use_managed_policies ? var.infra_nodegroup_custom_policy_arns : [])
+  role       = aws_iam_role.ignite_eks_nodegroup_role[0].name
   policy_arn = each.value
 }
 
@@ -118,8 +118,8 @@ resource "aws_iam_role" "ignite_irsa_role" {
 
 # Attach policies to the IRSA role
 resource "aws_iam_role_policy_attachment" "ignite_irsa_policy_attachments" {
-  for_each = toset(var.infra_enable_irsa ? var.infra_irsa_policy_arns : [])
-  role     = aws_iam_role.ignite_irsa_role[0].name
+  for_each   = toset(var.infra_enable_irsa ? var.infra_irsa_policy_arns : [])
+  role       = aws_iam_role.ignite_irsa_role[0].name
   policy_arn = each.value
 }
 

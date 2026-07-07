@@ -57,3 +57,8 @@ output "eks_node_group_role_arn" {
   description = "IAM Role ARN for EKS node group"
   value       = var.infra_enable_node_iam_roles ? module.iam_core.node_group_iam_role_arn : null
 }
+
+output "external_secrets_irsa_role_arn" {
+  description = "IAM Role ARN for External Secrets Operator IRSA"
+  value       = module.iam_irsa.irsa_role_arn
+}

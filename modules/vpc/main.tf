@@ -5,8 +5,8 @@
 # Create Virtual Private Cloud 
 resource "aws_vpc" "infra_vpc" {
   cidr_block           = var.infra_vpc_cidr
-  enable_dns_support   = true  # Enable DNS resolution in the VPC
-  enable_dns_hostnames = true  # Enable hostnames for instances launched in the VPC
+  enable_dns_support   = true # Enable DNS resolution in the VPC
+  enable_dns_hostnames = true # Enable hostnames for instances launched in the VPC
 
   tags = merge(var.infra_tags, {
     Name = "${var.infra_environment}-${var.infra_project_name}-vpc"
@@ -71,15 +71,15 @@ resource "aws_eip" "infra_nat_eip" {
 
 # Create a NAT Gateway in the public subnet (allows private subnet instances internet access).
 resource "aws_nat_gateway" "infra_nat_gw" {
-  allocation_id = aws_eip.infra_nat_eip[0].id # currently set up on one az only, in prod it is required for all az.
-  subnet_id     = aws_subnet.infra_public_subnets[sort(keys(aws_subnet.infra_public_subnets))[0]].id  # NAT Gateway must be in a public subnet to provide internet access
+  allocation_id = aws_eip.infra_nat_eip[0].id                                                        # currently set up on one az only, in prod it is required for all az.
+  subnet_id     = aws_subnet.infra_public_subnets[sort(keys(aws_subnet.infra_public_subnets))[0]].id # NAT Gateway must be in a public subnet to provide internet access
 
   tags = merge(var.infra_tags, {
     Name = "${var.infra_environment}-${var.infra_project_name}-nat-gw"
   })
-  depends_on = [aws_vpc.infra_vpc, 
+  depends_on = [aws_vpc.infra_vpc,
     aws_eip.infra_nat_eip
-    ]
+  ]
 }
 
 # Route table for Public subnets
@@ -87,7 +87,7 @@ resource "aws_route_table" "infra_public_rt" {
   vpc_id = aws_vpc.infra_vpc.id
 
   route {
-    cidr_block = "0.0.0.0/0"   # Route all internet-bound traffic (0.0.0.0/0) through the Internet Gateway
+    cidr_block = "0.0.0.0/0" # Route all internet-bound traffic (0.0.0.0/0) through the Internet Gateway
     gateway_id = aws_internet_gateway.infra_igw.id
   }
 
@@ -114,7 +114,7 @@ resource "aws_route_table" "infra_private_rt" {
   vpc_id = aws_vpc.infra_vpc.id
 
   route {
-    cidr_block     = "0.0.0.0/0"   # Route internet-bound traffic from private subnets through the NAT Gateway
+    cidr_block     = "0.0.0.0/0" # Route internet-bound traffic from private subnets through the NAT Gateway
     nat_gateway_id = aws_nat_gateway.infra_nat_gw.id
   }
 
@@ -132,8 +132,8 @@ resource "aws_route_table_association" "infra_private_rt_assoc" {
   route_table_id = aws_route_table.infra_private_rt.id
 
   depends_on = [aws_vpc.infra_vpc,
-      aws_subnet.infra_private_subnets
-      ]
+    aws_subnet.infra_private_subnets
+  ]
 }
 
 resource "aws_security_group" "infra_eks_sg" {
@@ -156,37 +156,37 @@ resource "aws_security_group" "infra_eks_sg" {
 
 # Ingress rules for the EKS API endpoint. Prefer `infra_bastion_sg_id` (SG-to-SG) for least-privilege.
 resource "aws_security_group_rule" "allow_https_from_bastion_sg" {
-  count = var.infra_bastion_sg_id != null ? 1 : 0
-  type = "ingress"
-  from_port = 443
-  to_port = 443
-  protocol = "tcp"
-  security_group_id = aws_security_group.infra_eks_sg.id
+  count                    = var.infra_bastion_sg_id != null ? 1 : 0
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.infra_eks_sg.id
   source_security_group_id = var.infra_bastion_sg_id
-  description = "Allow HTTPS from bastion security group"
+  description              = "Allow HTTPS from bastion security group"
 }
 
 resource "aws_security_group_rule" "allow_https_from_bastion_cidr" {
-  count = var.infra_bastion_cidr != null && var.infra_bastion_cidr != "" ? 1 : 0
-  type = "ingress"
-  from_port = 443
-  to_port = 443
-  protocol = "tcp"
+  count             = var.infra_bastion_cidr != null && var.infra_bastion_cidr != "" ? 1 : 0
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
   security_group_id = aws_security_group.infra_eks_sg.id
-  cidr_blocks = [var.infra_bastion_cidr]
-  description = "Allow HTTPS from bastion CIDR"
+  cidr_blocks       = [var.infra_bastion_cidr]
+  description       = "Allow HTTPS from bastion CIDR"
 }
 
 # Fallback (not recommended): if no bastion CIDR/SG provided (like this case), open HTTPS to the world.
 resource "aws_security_group_rule" "allow_https_open" {
-  count = var.infra_bastion_sg_id == null && (var.infra_bastion_cidr == null || var.infra_bastion_cidr == "") ? 1 : 0
-  type = "ingress"
-  from_port = 443
-  to_port = 443
-  protocol = "tcp"
+  count             = var.infra_bastion_sg_id == null && (var.infra_bastion_cidr == null || var.infra_bastion_cidr == "") ? 1 : 0
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
   security_group_id = aws_security_group.infra_eks_sg.id
-  cidr_blocks = ["0.0.0.0/0"]
-  description = "Fallback: Allow HTTPS from everywhere (NOT recommended for production)"
+  cidr_blocks       = ["0.0.0.0/0"]
+  description       = "Fallback: Allow HTTPS from everywhere (NOT recommended for production)"
 }
 
 # Note: For production high-availability, create a NAT Gateway per AZ and associate private subnet route tables to the NAT in the same AZ.
