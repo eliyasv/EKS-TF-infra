@@ -26,7 +26,7 @@ This project demonstrates Infrastructure as Code, Kubernetes platform provisioni
 *  OIDC provider created by the EKS module, with IRSA role support via the IAM module
 *  Configurable EKS add-ons
 *  CI/CD ready with Jenkins pipeline for safe plan/apply/destroy
-*  Remote S3 backend with state locking via DynamoDB
+*  Remote S3 backend currently using deprecated DynamoDB-based locking; native S3 lockfiles are recommended for future implementation
 
 ---
 
@@ -71,7 +71,7 @@ This project demonstrates Infrastructure as Code, Kubernetes platform provisioni
       │  ┌──────────────────────────┐  ┌────────────────────────────────────────┐   │
       │  │      IAM Roles           │  │         State Backend                  │   │
       │  │  • Control Plane         │  │  • S3 (terraform.tfstate)              │   │
-      │  │  • Node Groups           │  │  • DynamoDB (state locking)            │   │
+      │  │  • Node Groups           │  │  • DynamoDB locking (deprecated)       │   │
       │  │  • OIDC/IRSA             │  │                                        │   │
       │  └──────────────────────────┘  └────────────────────────────────────────┘   │
       └─────────────────────────────────────────────────────────────────────────────┘
@@ -127,7 +127,7 @@ This project demonstrates Infrastructure as Code, Kubernetes platform provisioni
 
 * Terraform CLI
 * AWS IAM user with appropriate permissions
-* S3 bucket + DynamoDB table for remote state storing
+* S3 bucket for remote state storage and a DynamoDB table for the current deprecated locking method
 * CI/CD environment with Terraform and AWS credentials.
 
 ---
@@ -320,7 +320,7 @@ terraform {
 }
 ```
 
-Note: Newer Terraform versions warn that `dynamodb_table` is deprecated in favor of S3 lockfiles. This repository currently still uses DynamoDB locking; update both backend files together if you migrate to `use_lockfile`.
+> **State-locking:** This project currently uses DynamoDB-based Terraform state locking. DynamoDB locking for the S3 backend is deprecated as per documentation and may be removed in a future Terraform version. Native S3 locking with `use_lockfile = true` is recommended for future implementation.
 
 ---
 
@@ -384,7 +384,7 @@ rm -f backend.tf
 
 ### Destroy and Rebuild Later
 
-For temporary shutdown in dev, keep the S3 state bucket and DynamoDB lock table. Destroying those backend resources removes Terraform's state history and makes rebuild/cleanup harder.
+For temporary shutdown in dev, keep the S3 state bucket and the currently used DynamoDB lock table. Although DynamoDB-based locking is deprecated and native S3 lockfiles are recommended for future implementation, removing the table while this configuration still uses it will break state locking. Destroying the S3 backend resources removes Terraform's state history and makes rebuild/cleanup harder.
 
 If the EKS cluster has a lifecycle guard enabled, remove or comment it only for the intentional destroy:
 
@@ -520,7 +520,7 @@ The role trust policy is tied to `system:serviceaccount:external-secrets:externa
 -  Private API endpoint (no public access)
 -  IRSA enabled for pod-level IAM
 -  State encryption at rest (S3)
--  State locking (DynamoDB)
+-  State locking currently uses DynamoDB (deprecated); native S3 lockfiles are recommended for future implementation
 -  Security group allows 0.0.0.0/0 on 443 (restrict in production)
 -  IRSA policy uses wildcard permissions (apply least privilege in production)
 -  Current setup uses a single NAT Gateway for cost-efficiency. Production requires one per AZ for High Availability.
