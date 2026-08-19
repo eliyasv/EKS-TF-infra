@@ -61,6 +61,8 @@ Detailed architecture notes are in [docs/architecture.md](docs/architecture.md).
 |   |-- eks
 |   |-- iam
 |   `-- vpc
+|-- .github/workflows
+|   `-- terraform.yml
 |-- docs
 |-- Jenkinsfile
 |-- main.tf
@@ -107,12 +109,14 @@ Full environment workflow is in [docs/usage.md](docs/usage.md).
 
 ## CI/CD
 
-The root [Jenkinsfile](Jenkinsfile) supports:
+Jenkins is the active CI/CD path for this project. The root [Jenkinsfile](Jenkinsfile) supports:
 
 - `ENVIRONMENT`: `dev` or `prod`
 - `ACTION`: `plan`, `apply`, or `destroy`
 
 It copies the selected backend config, initializes Terraform, formats, validates, plans, and optionally applies or destroys infrastructure with manual approval.
+
+The repository also contains a GitHub Actions workflow at `.github/workflows/terraform.yml`, but it is not the current primary deployment path.
 
 CI/CD details are in [docs/ci-cd.md](docs/ci-cd.md).
 
