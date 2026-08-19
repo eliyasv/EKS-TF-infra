@@ -36,7 +36,7 @@ Also pause if the plan unexpectedly destroys:
 
 ## Branching Note
 
-The Jenkinsfile has a configured Git branch. If your team deploys from `dev`, make sure Jenkins checks out `dev` or make the branch a Jenkins parameter.
+The Jenkinsfile has a configured Git branch. If you deploy from `dev`, make sure Jenkins checks out `dev` or make the branch a Jenkins parameter.
 
 ## Improvement Ideas
 
