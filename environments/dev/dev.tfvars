@@ -12,7 +12,7 @@ infra_subnet_azs           = ["us-east-1a", "us-east-1b", "us-east-1c"]
 
 # EKS Cluster Configuration
 infra_enable_eks            = true
-infra_cluster_version       = "1.30"
+infra_cluster_version       = "1.36"
 infra_enable_private_access = true
 infra_enable_public_access  = false
 
@@ -37,19 +37,19 @@ infra_enable_node_iam_roles    = true
 # EKS Add-ons
 infra_eks_addons = [
   {
-    name    = "vpc-cni"
-    version = "v1.19.2-eksbuild.1"
+    name        = "vpc-cni"
+    most_recent = true
   },
   {
-    name    = "coredns"
-    version = "v1.11.4-eksbuild.1"
+    name        = "coredns"
+    most_recent = true
   },
   {
-    name    = "kube-proxy"
-    version = "v1.30.14-eksbuild.2"
+    name        = "kube-proxy"
+    most_recent = true
   },
   {
-    name    = "aws-ebs-csi-driver"
-    version = "v1.29.1-eksbuild.1"
+    name        = "aws-ebs-csi-driver"
+    most_recent = true
   }
 ]

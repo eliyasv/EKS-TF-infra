@@ -126,12 +126,13 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
 # EKS Addons
 
 resource "aws_eks_addon" "ignite_addons" {
-  # Iterate over addon definitions passed by vars (list of { name, version })
+  # Iterate over addon definitions passed by vars
   for_each = var.infra_eks_addons != null ? { for addon in var.infra_eks_addons : addon.name => addon } : {}
 
   cluster_name  = try(aws_eks_cluster.ignite_cluster[0].name, null)
   addon_name    = each.value.name
   addon_version = each.value.version
+  most_recent   = each.value.most_recent
 
   # Wait until node groups are ready before installing addons
   depends_on = [

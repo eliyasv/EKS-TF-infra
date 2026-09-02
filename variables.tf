@@ -184,10 +184,11 @@ variable "infra_spot_max_capacity" {
 # EKS Add-ons
 # -----------------------------
 variable "infra_eks_addons" {
-  description = "List of EKS managed addons (vpc-cni, CoreDNS, etc.)"
+  description = "List of EKS managed addons. Set version to pin a specific version, or most_recent to let AWS choose the latest compatible version."
   type = list(object({
-    name    = string
-    version = string
+    name        = string
+    version     = optional(string)
+    most_recent = optional(bool, false)
   }))
 }
 
