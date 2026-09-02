@@ -74,7 +74,9 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
 
   # Tags for resource classification
   tags = merge(var.infra_tags, {
-    Name = "${var.infra_cluster_name}-ondemand"
+    Name                                                  = "${var.infra_cluster_name}-ondemand"
+    "k8s.io/cluster-autoscaler/enabled"                   = "true"
+    "k8s.io/cluster-autoscaler/${var.infra_cluster_name}" = "owned"
   })
 
   # Ensure IAM policies for worker functionality are attached first
@@ -115,7 +117,9 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
   disk_size = 50
 
   tags = merge(var.infra_tags, {
-    Name = "${var.infra_cluster_name}-spot"
+    Name                                                  = "${var.infra_cluster_name}-spot"
+    "k8s.io/cluster-autoscaler/enabled"                   = "true"
+    "k8s.io/cluster-autoscaler/${var.infra_cluster_name}" = "owned"
   })
 
   depends_on = [
