@@ -74,7 +74,9 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
 
   # Tags for resource classification
   tags = merge(var.infra_tags, {
-    Name = "${var.infra_cluster_name}-ondemand"
+    Name                                                  = "${var.infra_cluster_name}-ondemand"
+    "k8s.io/cluster-autoscaler/enabled"                   = "true"
+    "k8s.io/cluster-autoscaler/${var.infra_cluster_name}" = "owned"
   })
 
   # Ensure IAM policies for worker functionality are attached first
@@ -115,7 +117,9 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
   disk_size = 50
 
   tags = merge(var.infra_tags, {
-    Name = "${var.infra_cluster_name}-spot"
+    Name                                                  = "${var.infra_cluster_name}-spot"
+    "k8s.io/cluster-autoscaler/enabled"                   = "true"
+    "k8s.io/cluster-autoscaler/${var.infra_cluster_name}" = "owned"
   })
 
   depends_on = [
@@ -126,12 +130,14 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
 # EKS Addons
 
 resource "aws_eks_addon" "ignite_addons" {
-  # Iterate over addon definitions passed by vars (list of { name, version })
-  for_each = var.infra_eks_addons != null ? { for addon in var.infra_eks_addons : addon.name => addon } : {}
-
+  # Iterate over addon definitions passed by vars
+  for_each = var.infra_eks_addons != null ? {
+    for addon in var.infra_eks_addons : addon.name => addon
+  } : {}
   cluster_name  = try(aws_eks_cluster.ignite_cluster[0].name, null)
-  addon_name    = each.value.name
-  addon_version = each.value.version
+  addon_name   = each.value.name
+  addon_version = data.aws_eks_addon_version.ignite_addons[each.key].version
+
 
   # Wait until node groups are ready before installing addons
   depends_on = [
