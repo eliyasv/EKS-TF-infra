@@ -130,8 +130,8 @@ module "iam_irsa" {
   infra_irsa_role_name            = "${var.infra_cluster_name}-external-secrets-irsa"
   infra_irsa_subject              = "system:serviceaccount:external-secrets:external-secrets"
   infra_irsa_policy_arns = {
-  external_secrets = aws_iam_policy.external_secrets_read.arn
-}
+    external_secrets = aws_iam_policy.external_secrets_read.arn
+  }
 
   # OIDC provider created by EKS module
   infra_oidc_provider_arn = module.eks.oidc_provider_arn

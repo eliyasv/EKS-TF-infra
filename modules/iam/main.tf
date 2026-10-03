@@ -118,7 +118,7 @@ resource "aws_iam_role" "ignite_irsa_role" {
 
 # Attach policies to the IRSA role
 resource "aws_iam_role_policy_attachment" "ignite_irsa_policy_attachments" {
-  for_each = var.infra_enable_irsa ? var.infra_irsa_policy_arns : {}
+  for_each   = var.infra_enable_irsa ? var.infra_irsa_policy_arns : {}
   role       = aws_iam_role.ignite_irsa_role[0].name
   policy_arn = each.value
 }

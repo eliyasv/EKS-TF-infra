@@ -67,8 +67,8 @@ variable "infra_irsa_subject" {
 
 variable "infra_irsa_policy_arns" {
   description = "List of policy ARNs to attach to the IRSA role"
-  type        = list(string)
-  default     = []
+  type        = map(string)
+  default     = {}
 }
 
 variable "infra_oidc_url" {
@@ -85,6 +85,6 @@ variable "infra_oidc_thumbprint" {
 
 variable "infra_oidc_provider_arn" {
   description = "ARN of the OIDC provider for the cluster (if created externally)"
-  type    = map(string)
-  default = {}
+  type        = string
+  default     = null
 }
