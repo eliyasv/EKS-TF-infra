@@ -37,19 +37,19 @@ infra_enable_node_iam_roles    = true
 # EKS Add-ons
 infra_eks_addons = [
   {
-    name        = "vpc-cni"
-    most_recent = true
+    name    = "vpc-cni"
+    version = "v1.23.2-eksbuild.1"
   },
   {
-    name        = "coredns"
-    most_recent = true
+    name    = "coredns"
+    version = "v1.14.6-eksbuild.4"
   },
   {
-    name        = "kube-proxy"
-    most_recent = true
+    name    = "kube-proxy"
+    version = "v1.36.0-eksbuild.25"
   },
   {
-    name        = "aws-ebs-csi-driver"
-    most_recent = true
+    name    = "aws-ebs-csi-driver"
+    version = "v1.65.0-eksbuild.2"
   }
 ]

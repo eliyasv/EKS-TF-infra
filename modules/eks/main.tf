@@ -13,7 +13,7 @@ resource "aws_eks_cluster" "ignite_cluster" {
 
   # IAM role used by the EKS control plane to call other AWS services
   role_arn = var.control_plane_iam_role_arn
-
+  
   # Kubernetes version to run for this cluster
   version = var.infra_cluster_version
 
