@@ -205,10 +205,10 @@ resource "aws_eks_addon" "ignite_addons" {
   for_each = var.infra_eks_addons != null ? {
     for addon in var.infra_eks_addons : addon.name => addon
   } : {}
-  cluster_name  = try(aws_eks_cluster.ignite_cluster[0].name, null)
-  addon_name    = each.value.name
-  addon_version = data.aws_eks_addon_version.ignite_addons[each.key].version
-
+  cluster_name = try(aws_eks_cluster.ignite_cluster[0].name, null)
+  addon_name   = each.value.name
+  # Use the pinned version when provided; otherwise use the compatible version lookup.
+  addon_version = each.value.version != null ? each.value.version : data.aws_eks_addon_version.ignite_addons[each.key].version
 
   # Wait until node groups are ready before installing addons
   depends_on = [
