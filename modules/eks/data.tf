@@ -1,6 +1,7 @@
 data "aws_eks_addon_version" "ignite_addons" {
   for_each = var.infra_eks_addons != null ? {
     for addon in var.infra_eks_addons : addon.name => addon
+    if addon.version == null
   } : {}
 
   addon_name         = each.value.name
