@@ -85,6 +85,6 @@ variable "infra_oidc_thumbprint" {
 
 variable "infra_oidc_provider_arn" {
   description = "ARN of the OIDC provider for the cluster (if created externally)"
-  type        = string
-  default     = null
+  type    = map(string)
+  default = {}
 }
