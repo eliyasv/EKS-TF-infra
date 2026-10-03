@@ -66,3 +66,20 @@ Some add-ons can use node role permissions, but production-style EKS normally gi
 - External Secrets Operator
 - EBS CSI driver
 - Cluster Autoscaler
+
+### Worker Instance Metadata
+
+Worker launch templates require IMDSv2 and set the response hop limit to `2`. The second hop allows pods such as the EBS CSI controller to obtain temporary credentials from the worker IAM role while keeping IMDSv2 tokens required.
+
+Existing managed node groups created without these launch templates must be replaced to adopt the metadata settings. This project applies that change during the next fresh lab rebuild rather than modifying the current node groups in place.
+
+After deployment, verify the settings on running workers:
+
+```bash
+aws ec2 describe-instances \
+  --filters "Name=tag:eks:cluster-name,Values=ignite-cluster-dev" "Name=instance-state-name,Values=running" \
+  --query 'Reservations[].Instances[].{InstanceId:InstanceId,HttpTokens:MetadataOptions.HttpTokens,HopLimit:MetadataOptions.HttpPutResponseHopLimit}' \
+  --output table
+```
+
+Each worker should report `required` for `HttpTokens` and `2` for `HopLimit`.
