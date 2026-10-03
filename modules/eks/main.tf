@@ -13,7 +13,7 @@ resource "aws_eks_cluster" "ignite_cluster" {
 
   # IAM role used by the EKS control plane to call other AWS services
   role_arn = var.control_plane_iam_role_arn
-
+  
   # Kubernetes version to run for this cluster
   version = var.infra_cluster_version
 
@@ -39,6 +39,38 @@ resource "aws_eks_cluster" "ignite_cluster" {
   # Dependencies on IAM roles are provided implicitly via module inputs (role ARNs)
 }
 
+# Worker Launch Template: On-Demand Instances
+resource "aws_launch_template" "ignite_ondemand_nodes" {
+  count       = var.infra_enable_ondemand_nodes ? 1 : 0
+  name_prefix = "${var.infra_cluster_name}-ondemand-"
+  description = "Launch template for ${var.infra_cluster_name} on-demand workers"
+
+  # Pods that use the node role need two network hops to reach IMDSv2 credentials.
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 2
+  }
+
+  # Custom launch templates own root disk settings; preserve the EKS Linux default size.
+  block_device_mappings {
+    device_name = "/dev/xvda"
+
+    ebs {
+      delete_on_termination = true
+      encrypted             = false
+      iops                  = 3000
+      throughput            = 125
+      volume_size           = 20
+      volume_type           = "gp3"
+    }
+  }
+
+  tags = merge(var.infra_tags, {
+    Name = "${var.infra_cluster_name}-ondemand-launch-template"
+  })
+}
+
 # Node Group: On-Demand Instances
 resource "aws_eks_node_group" "ignite_ondemand_nodes" {
   count           = var.infra_enable_ondemand_nodes ? 1 : 0
@@ -61,6 +93,11 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
   # Instance types for on-demand nodes
   instance_types = var.infra_ondemand_instance_types
   capacity_type  = "ON_DEMAND"
+
+  launch_template {
+    id      = aws_launch_template.ignite_ondemand_nodes[0].id
+    version = aws_launch_template.ignite_ondemand_nodes[0].latest_version
+  }
 
   # Node label to identify workload scheduling preference
   labels = {
@@ -85,6 +122,38 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
   ]
 }
 
+# Worker Launch Template: Spot Instances
+resource "aws_launch_template" "ignite_spot_nodes" {
+  count       = var.infra_enable_spot_nodes ? 1 : 0
+  name_prefix = "${var.infra_cluster_name}-spot-"
+  description = "Launch template for ${var.infra_cluster_name} spot workers"
+
+  # Pods that use the node role need two network hops to reach IMDSv2 credentials.
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 2
+  }
+
+  # Preserve the existing 50 GiB Spot root disk in the custom launch template.
+  block_device_mappings {
+    device_name = "/dev/xvda"
+
+    ebs {
+      delete_on_termination = true
+      encrypted             = false
+      iops                  = 3000
+      throughput            = 125
+      volume_size           = 50
+      volume_type           = "gp3"
+    }
+  }
+
+  tags = merge(var.infra_tags, {
+    Name = "${var.infra_cluster_name}-spot-launch-template"
+  })
+}
+
 # Node Group: Spot Instances
 
 resource "aws_eks_node_group" "ignite_spot_nodes" {
@@ -105,6 +174,11 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
   instance_types = var.infra_spot_instance_types
   capacity_type  = "SPOT"
 
+  launch_template {
+    id      = aws_launch_template.ignite_spot_nodes[0].id
+    version = aws_launch_template.ignite_spot_nodes[0].latest_version
+  }
+
   labels = {
     type = "spot"
   }
@@ -112,9 +186,6 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
   update_config {
     max_unavailable = 1
   }
-
-  # Node disk size (GB)
-  disk_size = 50
 
   tags = merge(var.infra_tags, {
     Name                                                  = "${var.infra_cluster_name}-spot"
@@ -136,7 +207,7 @@ resource "aws_eks_addon" "ignite_addons" {
   } : {}
   cluster_name  = try(aws_eks_cluster.ignite_cluster[0].name, null)
   addon_name    = each.value.name
-  addon_version = each.value.version != null ? each.value.version : data.aws_eks_addon_version.ignite_addons[each.key].version
+  addon_version = data.aws_eks_addon_version.ignite_addons[each.key].version
 
 
   # Wait until node groups are ready before installing addons
