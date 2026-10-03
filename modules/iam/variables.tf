@@ -67,8 +67,8 @@ variable "infra_irsa_subject" {
 
 variable "infra_irsa_policy_arns" {
   description = "List of policy ARNs to attach to the IRSA role"
-  type        = list(string)
-  default     = []
+  type        = map(string)
+  default     = {}
 }
 
 variable "infra_oidc_url" {
