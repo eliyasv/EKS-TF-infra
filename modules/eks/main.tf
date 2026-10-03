@@ -135,8 +135,8 @@ resource "aws_eks_addon" "ignite_addons" {
     for addon in var.infra_eks_addons : addon.name => addon
   } : {}
   cluster_name  = try(aws_eks_cluster.ignite_cluster[0].name, null)
-  addon_name   = each.value.name
-  addon_version = data.aws_eks_addon_version.ignite_addons[each.key].version
+  addon_name    = each.value.name
+  addon_version = each.value.version != null ? each.value.version : data.aws_eks_addon_version.ignite_addons[each.key].version
 
 
   # Wait until node groups are ready before installing addons
