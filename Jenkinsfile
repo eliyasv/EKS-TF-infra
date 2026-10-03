@@ -2,7 +2,7 @@ pipeline {
   agent any   // Run on any available build agent
 
   environment {
-    TF_VERSION = '1.15.0'
+    TF_VERSION = '1.16.5'
     AWS_REGION = 'us-east-1'
     GIT_REPO   = 'https://github.com/eliyasv/EKS-TF-infra.git'
     GIT_BRANCH = 'main'
