@@ -126,7 +126,7 @@ module "iam_irsa" {
 
   infra_create_eks_cluster_role   = false
   infra_create_eks_nodegroup_role = false
-  infra_enable_irsa               = true
+  infra_enable_irsa               = var.infra_enable_eks && var.infra_enable_irsa
   infra_irsa_role_name            = "${var.infra_cluster_name}-external-secrets-irsa"
   infra_irsa_subject              = "system:serviceaccount:external-secrets:external-secrets"
   infra_irsa_policy_arns = {
