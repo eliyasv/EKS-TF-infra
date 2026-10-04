@@ -41,7 +41,7 @@ resource "aws_eks_cluster" "ignite_cluster" {
 
 # Node Group: On-Demand Instances
 resource "aws_eks_node_group" "ignite_ondemand_nodes" {
-  count           = var.infra_enable_ondemand_nodes ? 1 : 0
+  count           = var.infra_enable_eks && var.infra_enable_ondemand_nodes ? 1 : 0
   cluster_name    = aws_eks_cluster.ignite_cluster[0].name
   node_group_name = "${var.infra_cluster_name}-ondemand"
 
@@ -88,7 +88,7 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
 # Node Group: Spot Instances
 
 resource "aws_eks_node_group" "ignite_spot_nodes" {
-  count           = var.infra_enable_spot_nodes ? 1 : 0
+  count           = var.infra_enable_eks && var.infra_enable_spot_nodes ? 1 : 0
   cluster_name    = aws_eks_cluster.ignite_cluster[0].name
   node_group_name = "${var.infra_cluster_name}-spot"
 
@@ -131,11 +131,13 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
 
 resource "aws_eks_addon" "ignite_addons" {
   # Iterate over addon definitions passed by vars
-  for_each = var.infra_eks_addons != null ? {
-    for addon in var.infra_eks_addons : addon.name => addon
-  } : {}
+  for_each = var.infra_enable_eks ? (
+    var.infra_eks_addons != null ? {
+      for addon in var.infra_eks_addons : addon.name => addon
+    } : {}
+  ) : {}
   cluster_name  = try(aws_eks_cluster.ignite_cluster[0].name, null)
-  addon_name   = each.value.name
+  addon_name    = each.value.name
   addon_version = data.aws_eks_addon_version.ignite_addons[each.key].version
 
 
