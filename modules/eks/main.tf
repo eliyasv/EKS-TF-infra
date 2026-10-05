@@ -76,6 +76,7 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
   count           = var.infra_enable_eks && var.infra_enable_ondemand_nodes ? 1 : 0
   cluster_name    = aws_eks_cluster.ignite_cluster[0].name
   node_group_name = "${var.infra_cluster_name}-ondemand"
+  version         = aws_eks_cluster.ignite_cluster[0].version
 
   # IAM role for worker nodes (allows them to talk to other AWS services)
   node_role_arn = var.node_group_iam_role_arn
@@ -160,6 +161,7 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
   count           = var.infra_enable_eks && var.infra_enable_spot_nodes ? 1 : 0
   cluster_name    = aws_eks_cluster.ignite_cluster[0].name
   node_group_name = "${var.infra_cluster_name}-spot"
+  version         = aws_eks_cluster.ignite_cluster[0].version
 
   node_role_arn = var.node_group_iam_role_arn
   subnet_ids    = var.private_subnet_ids
