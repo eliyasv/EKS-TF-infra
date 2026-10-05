@@ -107,7 +107,7 @@ variable "infra_enable_eks" {
 variable "infra_cluster_version" {
   description = "EKS Kubernetes version"
   type        = string
-  default     = "1.29"
+  default     = "1.36"
 }
 
 variable "infra_enable_private_access" {
