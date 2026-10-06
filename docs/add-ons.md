@@ -98,7 +98,7 @@ Before installing it, add autoscaler discovery tags to both EKS managed node gro
 
 Then create an IAM policy and IRSA service account for `kube-system/cluster-autoscaler`, install the autoscaler manifest, and pin the image version to match the EKS cluster minor version.
 
-For EKS `1.30`:
+For EKS `1.36:
 
 ```bash
 kubectl -n kube-system set image deployment/cluster-autoscaler \

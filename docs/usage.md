@@ -60,12 +60,23 @@ rm -f backend.tf tfplan-prod
 
 ## Destroy Dev
 
+Before Terraform destroy, follow the companion app's
+[ordered teardown runbook](https://github.com/eliyasv/EKS-TF-3tier-app/blob/main/docs/teardown.md).
+Disable Argo CD sync and delete project Ingress/LoadBalancer Services while EKS
+and their controllers still run. Check Classic (`aws elb`) as well as ALB/NLB
+(`aws elbv2`) resources. Delete workload PVCs while EBS CSI runs, and remove
+manually created eksctl resources, jump instance, dedicated security groups
+and EIPs. Run destroy from outside the cluster VPC. Remaining manual load
+balancers/interfaces/groups can block subnet, gateway or VPC deletion.
+
 Keep the S3 state bucket and DynamoDB lock table when destroying temporary dev infrastructure. Removing the backend resources makes future cleanup and rebuilds harder.
 
 ```bash
 cp environments/dev/backend.tf ./backend.tf
 terraform init -reconfigure
-terraform destroy -var-file=environments/dev/dev.tfvars
+terraform plan -destroy -var-file=environments/dev/dev.tfvars -out=destroy-dev.tfplan
+# Review the destroy plan before applying:
+terraform apply destroy-dev.tfplan
 rm -f backend.tf
 ```
 
@@ -94,6 +105,17 @@ aws eks update-cluster-config \
   --region us-east-1 \
   --name ignite-cluster-dev \
   --access-config authenticationMode=API_AND_CONFIG_MAP
+```
+
+Before creating access entries, wait for the access update itself. Substitute
+the update ID returned above and repeat the first command until status is
+`Successful`; waiting only for `cluster-active` can return too early.
+
+```bash
+aws eks describe-update --region us-east-1 --name ignite-cluster-dev \
+  --update-id "<UPDATE_ID>" --query 'update.{Status:status,Errors:errors}'
+aws eks describe-cluster --region us-east-1 --name ignite-cluster-dev \
+  --query 'cluster.accessConfig'
 ```
 
 Grant access to your IAM user or role:
