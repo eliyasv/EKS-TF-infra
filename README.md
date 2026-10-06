@@ -2,7 +2,7 @@
 
 Production-style AWS EKS infrastructure built with Terraform for the companion 3-tier MERN application.
 
-This repository provisions the cloud foundation: VPC networking, IAM roles, EKS, managed node groups, EKS add-ons, and IRSA support for External Secrets Operator.
+This repository provisions the cloud foundation: VPC networking, IAM roles, EKS, managed node groups, EKS add-ons, and IRSA support for External Secrets Operator. When enabled, `logging.tf` creates a dedicated Fluent Bit IRSA role and an application CloudWatch log group with 7-day retention.
 
 ## What This Project Demonstrates
 
@@ -12,6 +12,7 @@ This repository provisions the cloud foundation: VPC networking, IAM roles, EKS,
 - Private EKS API endpoint
 - On-demand and spot managed node groups
 - EKS OIDC provider and IRSA support
+- Scoped Fluent Bit log-writing permissions and Terraform-managed CloudWatch retention
 - Jenkins-driven Terraform plan/apply/destroy workflow
 - Remote S3 state backend with current DynamoDB locking
 
@@ -30,7 +31,9 @@ AWS us-east-1
 |-- IAM
 |   |-- EKS control plane role
 |   |-- Node group role
-|   `-- IRSA role for External Secrets Operator
+|   |-- IRSA role for External Secrets Operator
+|   `-- IRSA role for Fluent Bit (when logging is enabled)
+|-- CloudWatch application log group (7-day retention, when enabled)
 `-- Remote State
     |-- S3 bucket
     `-- DynamoDB state locking
@@ -66,6 +69,7 @@ Detailed architecture notes are in [docs/architecture.md](docs/architecture.md).
 |-- docs
 |-- Jenkinsfile
 |-- main.tf
+|-- logging.tf
 |-- outputs.tf
 |-- providers.tf
 `-- variables.tf
@@ -80,6 +84,8 @@ Detailed architecture notes are in [docs/architecture.md](docs/architecture.md).
 - eksctl
 - AWS credentials with permissions for VPC, IAM, EKS, EC2, S3, DynamoDB, and Secrets Manager
 - S3 bucket and DynamoDB table for the configured Terraform backend
+
+Terraform does not create the backend bucket/table, jump server, Jenkins/SonarQube host, ECR repositories, MongoDB Secrets Manager values, or EKS access entries. Provision those prerequisites separately. It creates the External Secrets/Fluent Bit roles, but their Kubernetes controllers and service accounts need post-cluster installation. The companion app's [redeployment checklist](https://github.com/eliyasv/EKS-TF-3tier-app/blob/main/docs/redeployment.md) describes ownership and order.
 
 ## Quick Start
 
@@ -106,6 +112,16 @@ rm -f backend.tf tfplan-prod
 ```
 
 Full environment workflow is in [docs/usage.md](docs/usage.md).
+
+For formatting and validation without AWS credentials or a remote backend, use a separate checkout or temporary directory:
+
+```bash
+terraform fmt -check -recursive
+terraform init -backend=false -input=false
+terraform validate
+```
+
+Initialization still needs provider downloads or a populated provider cache. Use the real environment backend for plan/apply/destroy.
 
 ## CI/CD
 
@@ -142,6 +158,14 @@ This Terraform repo provisions the EKS cluster and managed add-ons, but these ap
 
 Install notes are in [docs/add-ons.md](docs/add-ons.md).
 
+Argo CD and the Prometheus/Grafana/Alertmanager stack are bootstrapped separately; their configuration is in the companion app repository. For CloudWatch logging, set `infra_enable_cloudwatch_logs = true` with EKS and IRSA enabled (configured for dev), apply the role/log group first, then let Argo CD roll out the app's Fluent Bit configuration. Use the `fluent_bit_irsa_role_arn` and `application_log_group_name` outputs; see the [logging guide](https://github.com/eliyasv/EKS-TF-3tier-app/blob/main/docs/cloudwatch-logging.md).
+
+## Teardown
+
+Follow [the ordered teardown runbook](https://github.com/eliyasv/EKS-TF-3tier-app/blob/main/docs/teardown.md) before the dev destroy workflow. Disable Argo CD automated sync, remove Kubernetes-created load balancers while EKS/controllers still run, and delete workload storage while EBS CSI runs. Check both `aws elb` (Classic) and `aws elbv2` (ALB/NLB).
+
+Remove manually created eksctl resources and handle the jump server and its dedicated security group/EIP. Run the reviewed Terraform destroy from outside the cluster VPC. Preserve the state backend until cleanup is verified, then inventory resources created outside Terraform.
+
 ## Proof Of Deployment
 
 | Check | Evidence |
@@ -156,7 +180,7 @@ Install notes are in [docs/add-ons.md](docs/add-ons.md).
 This is a learning project with production-style structure. Important security notes:
 
 - Private EKS endpoint is enabled.
-- IRSA is used for External Secrets Operator.
+- IRSA is used for External Secrets Operator and, when enabled, Fluent Bit.
 - Terraform state is stored in S3 with encryption.
 - DynamoDB state locking is currently used, though newer Terraform versions recommend native S3 lockfiles.
 - Current VPC design uses a single NAT Gateway for cost control; production HA should use one NAT Gateway per AZ.
