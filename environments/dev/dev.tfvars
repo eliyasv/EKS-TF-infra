@@ -54,3 +54,4 @@ infra_eks_addons = [
     version = "v1.65.0-eksbuild.2"
   }
 ]
+infra_enable_cloudwatch_logs = true
