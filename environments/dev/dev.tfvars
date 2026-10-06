@@ -21,13 +21,13 @@ infra_enable_ondemand_nodes     = true
 infra_ondemand_instance_types   = ["t3a.medium"]
 infra_ondemand_desired_capacity = 3
 infra_ondemand_min_capacity     = 3
-infra_ondemand_max_capacity     = 3
+infra_ondemand_max_capacity     = 4
 
 # Node Group Configuration (Spot)
 infra_enable_spot_nodes     = true
 infra_spot_instance_types   = ["t3a.large", "m5.large"]
-infra_spot_desired_capacity = 1
-infra_spot_min_capacity     = 1
+infra_spot_desired_capacity = 2
+infra_spot_min_capacity     = 2
 infra_spot_max_capacity     = 5
 
 # IAM Role Flags
