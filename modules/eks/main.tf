@@ -13,7 +13,7 @@ resource "aws_eks_cluster" "ignite_cluster" {
 
   # IAM role used by the EKS control plane to call other AWS services
   role_arn = var.control_plane_iam_role_arn
-  
+
   # Kubernetes version to run for this cluster
   version = var.infra_cluster_version
 
@@ -41,7 +41,7 @@ resource "aws_eks_cluster" "ignite_cluster" {
 
 # Worker Launch Template: On-Demand Instances
 resource "aws_launch_template" "ignite_ondemand_nodes" {
-  count       = var.infra_enable_ondemand_nodes ? 1 : 0
+  count       = var.infra_enable_eks && var.infra_enable_ondemand_nodes ? 1 : 0
   name_prefix = "${var.infra_cluster_name}-ondemand-"
   description = "Launch template for ${var.infra_cluster_name} on-demand workers"
 
@@ -73,9 +73,10 @@ resource "aws_launch_template" "ignite_ondemand_nodes" {
 
 # Node Group: On-Demand Instances
 resource "aws_eks_node_group" "ignite_ondemand_nodes" {
-  count           = var.infra_enable_ondemand_nodes ? 1 : 0
+  count           = var.infra_enable_eks && var.infra_enable_ondemand_nodes ? 1 : 0
   cluster_name    = aws_eks_cluster.ignite_cluster[0].name
   node_group_name = "${var.infra_cluster_name}-ondemand"
+  version         = aws_eks_cluster.ignite_cluster[0].version
 
   # IAM role for worker nodes (allows them to talk to other AWS services)
   node_role_arn = var.node_group_iam_role_arn
@@ -124,7 +125,7 @@ resource "aws_eks_node_group" "ignite_ondemand_nodes" {
 
 # Worker Launch Template: Spot Instances
 resource "aws_launch_template" "ignite_spot_nodes" {
-  count       = var.infra_enable_spot_nodes ? 1 : 0
+  count       = var.infra_enable_eks && var.infra_enable_spot_nodes ? 1 : 0
   name_prefix = "${var.infra_cluster_name}-spot-"
   description = "Launch template for ${var.infra_cluster_name} spot workers"
 
@@ -157,9 +158,10 @@ resource "aws_launch_template" "ignite_spot_nodes" {
 # Node Group: Spot Instances
 
 resource "aws_eks_node_group" "ignite_spot_nodes" {
-  count           = var.infra_enable_spot_nodes ? 1 : 0
+  count           = var.infra_enable_eks && var.infra_enable_spot_nodes ? 1 : 0
   cluster_name    = aws_eks_cluster.ignite_cluster[0].name
   node_group_name = "${var.infra_cluster_name}-spot"
+  version         = aws_eks_cluster.ignite_cluster[0].version
 
   node_role_arn = var.node_group_iam_role_arn
   subnet_ids    = var.private_subnet_ids
@@ -202,9 +204,11 @@ resource "aws_eks_node_group" "ignite_spot_nodes" {
 
 resource "aws_eks_addon" "ignite_addons" {
   # Iterate over addon definitions passed by vars
-  for_each = var.infra_eks_addons != null ? {
-    for addon in var.infra_eks_addons : addon.name => addon
-  } : {}
+  for_each = var.infra_enable_eks ? (
+    var.infra_eks_addons != null ? {
+      for addon in var.infra_eks_addons : addon.name => addon
+    } : {}
+  ) : {}
   cluster_name = try(aws_eks_cluster.ignite_cluster[0].name, null)
   addon_name   = each.value.name
   # Use the pinned version when provided; otherwise use the compatible version lookup.

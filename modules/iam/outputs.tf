@@ -9,7 +9,8 @@ output "control_plane_iam_role_arn" {
 
   # Ensure policy is attached before the ARN is "ready" to prevent race condition
   depends_on = [
-    aws_iam_role_policy_attachment.ignite_eks_cluster_policy
+    aws_iam_role_policy_attachment.ignite_eks_cluster_policy,
+    aws_iam_role_policy_attachment.ignite_eks_cluster_custom
   ]
 }
 
@@ -22,7 +23,8 @@ output "node_group_iam_role_arn" {
     aws_iam_role_policy_attachment.ignite_nodegroup_worker_policy,
     aws_iam_role_policy_attachment.ignite_nodegroup_cni_policy,
     aws_iam_role_policy_attachment.ignite_nodegroup_registry_policy,
-    aws_iam_role_policy_attachment.ignite_nodegroup_ebs_policy
+    aws_iam_role_policy_attachment.ignite_nodegroup_ebs_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_custom
   ]
 }
 
@@ -32,10 +34,12 @@ output "iam_policies_propagated" {
   value       = true
   depends_on = [
     aws_iam_role_policy_attachment.ignite_eks_cluster_policy,
+    aws_iam_role_policy_attachment.ignite_eks_cluster_custom,
     aws_iam_role_policy_attachment.ignite_nodegroup_worker_policy,
     aws_iam_role_policy_attachment.ignite_nodegroup_cni_policy,
     aws_iam_role_policy_attachment.ignite_nodegroup_registry_policy,
-    aws_iam_role_policy_attachment.ignite_nodegroup_ebs_policy
+    aws_iam_role_policy_attachment.ignite_nodegroup_ebs_policy,
+    aws_iam_role_policy_attachment.ignite_nodegroup_custom
   ]
 }
 
