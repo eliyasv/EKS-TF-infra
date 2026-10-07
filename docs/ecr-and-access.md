@@ -136,19 +136,17 @@ There may be unrelated drift; review the full plan. Stop if a retained ECR
 repository or existing cluster is unexpectedly replaced. Only apply after
 imports/configuration match the intended ownership and permissions.
 
-Backend-free tests use mocked providers and do not contact AWS:
+Backend-free formatting and configuration validation do not require AWS credentials:
 
 ```bash
 terraform init -backend=false -input=false
+terraform fmt -check -recursive
 terraform validate
-terraform test -var-file=environments/dev/dev.tfvars
-terraform -chdir=modules/eks init -backend=false -input=false
-terraform -chdir=modules/eks test
 ```
 
 Run in a separate checkout or temporary directory to avoid altering the active
 backend initialization. Live no-change verification requires the correct AWS
-credentials and remote state; mocked tests do not replace that review.
+credentials and remote state; configuration validation does not replace that review.
 
 References: [ECR imports](https://registry.terraform.io/providers/hashicorp/aws/5.100.0/docs/resources/ecr_repository),
 [EKS access entry imports](https://registry.terraform.io/providers/hashicorp/aws/5.100.0/docs/resources/eks_access_entry),
