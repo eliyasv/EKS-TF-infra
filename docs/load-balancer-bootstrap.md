@@ -25,8 +25,8 @@ all CRD updates automatically; this script refuses a different existing chart ve
 
 ## Prepare and apply Terraform
 
-Defaults remain disabled; dev/prod tfvars are unchanged. To enable for the next
-deployment, add to the intended environment's tfvars:
+The variable defaults to disabled. Dev explicitly enables the IAM resources for
+its next apply; prod remains unchanged. To enable another environment, add:
 
 ```hcl
 infra_enable_load_balancer_controller = true

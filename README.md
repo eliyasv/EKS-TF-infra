@@ -163,7 +163,8 @@ Install notes are in [docs/add-ons.md](docs/add-ons.md).
 
 For the next deployment, an optional [Load Balancer Controller bootstrap](docs/load-balancer-bootstrap.md)
 provides Terraform-managed IAM permissions and a pinned Helm installation script.
-It is disabled by default; local checks are complete, and live verification is pending.
+Dev enables its IAM resources on the next apply; other environments default to disabled.
+Local checks are complete, and live verification is pending.
 
 Argo CD and the Prometheus/Grafana/Alertmanager stack are bootstrapped separately; their configuration is in the companion app repository. For CloudWatch logging, set `infra_enable_cloudwatch_logs = true` with EKS and IRSA enabled (configured for dev), apply the role/log group first, then let Argo CD roll out the app's Fluent Bit configuration. Use the `fluent_bit_irsa_role_arn` and `application_log_group_name` outputs; see the [logging guide](https://github.com/eliyasv/EKS-TF-3tier-app/blob/main/docs/cloudwatch-logging.md).
 
