@@ -1,11 +1,15 @@
+# Mock AWS responses so access rules can be checked without creating a cluster.
+# Run explicitly from the repo root: terraform -chdir=modules/eks test
 mock_provider "aws" {
   mock_resource "aws_eks_cluster" {
     defaults = {
+      # Supply a stable issuer for the module's dependent OIDC certificate lookup.
       identity = [{ oidc = [{ issuer = "https://oidc.eks.us-east-1.amazonaws.com/id/TEST" }] }]
     }
   }
 }
 mock_provider "tls" {
+  # Avoid a real TLS lookup; the fingerprint is dummy test data.
   mock_data "tls_certificate" {
     defaults = {
       certificates = [{ sha1_fingerprint = "0123456789012345678901234567890123456789" }]
@@ -13,6 +17,8 @@ mock_provider "tls" {
   }
 }
 
+# Dummy cluster inputs satisfy the module; node groups and add-ons are disabled
+# to keep these tests focused on access management.
 variables {
   infra_environment               = "test"
   infra_project_name              = "project-ignite"
@@ -37,6 +43,7 @@ variables {
   infra_eks_addons                = []
 }
 
+# Empty access inputs must add no grants, preserving manual access ownership.
 run "manual_access_ownership_by_default" {
   command = plan
   assert {
@@ -45,6 +52,7 @@ run "manual_access_ownership_by_default" {
   }
 }
 
+# An explicit reader grant must enable API access and retain its namespace scope.
 run "explicit_api_access_and_namespace_scope" {
   command = plan
   variables {
@@ -68,6 +76,7 @@ run "explicit_api_access_and_namespace_scope" {
   }
 }
 
+# Disabling EKS must suppress access resources even when grants are configured.
 run "eks_disabled_gates_access_resources" {
   command = plan
   variables {
@@ -86,6 +95,8 @@ run "eks_disabled_gates_access_resources" {
   }
 }
 
+# ConfigMap-only authentication cannot support API-managed access entries.
+# The expected validation failure is a successful test result.
 run "reject_entries_without_api_mode" {
   command = plan
   variables {
@@ -99,6 +110,7 @@ run "reject_entries_without_api_mode" {
   expect_failures = [var.infra_eks_access_entries]
 }
 
+# Access entries require a permanent IAM principal, not a temporary STS session.
 run "reject_sts_session_principal" {
   command = plan
   variables {

@@ -1,10 +1,14 @@
+# Mock providers let these tests inspect plans without AWS credentials or resources.
+# Run explicitly with: terraform test -var-file=environments/dev/dev.tfvars
 mock_provider "aws" {}
 mock_provider "tls" {}
 
 variables {
+  # Keep this test focused on repositories, independently of cluster creation.
   infra_enable_eks = false
 }
 
+# Empty defaults must leave existing, manually managed repositories outside state.
 run "manual_ecr_ownership_by_default" {
   command = plan
   assert {
@@ -13,6 +17,7 @@ run "manual_ecr_ownership_by_default" {
   }
 }
 
+# Opting in must retain the repository names used by Jenkins and Kubernetes.
 run "explicit_repository_names_preserve_image_paths" {
   command = plan
   variables {
