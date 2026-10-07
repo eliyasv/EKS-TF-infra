@@ -6,6 +6,11 @@ Run these commands from a host that can reach the private EKS endpoint, such as 
 
 ## AWS Load Balancer Controller
 
+An [optional Terraform and Helm bootstrap](load-balancer-bootstrap.md) is prepared
+for fresh installations. Dev enables its IAM resources on the next apply; other
+environments default to disabled. Live verification is pending. Choose that
+ownership path or the manual commands below.
+
 The companion app uses ALB annotations in `k8s/ingress.yaml`, so install AWS Load Balancer Controller before applying ingress resources.
 
 ```bash
