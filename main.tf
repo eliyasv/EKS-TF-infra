@@ -60,6 +60,9 @@ module "eks" {
   infra_cluster_name    = var.infra_cluster_name
   infra_cluster_version = var.infra_cluster_version
 
+  infra_eks_authentication_mode = var.infra_eks_authentication_mode
+  infra_eks_access_entries      = var.infra_eks_access_entries
+
   infra_enable_eks            = var.infra_enable_eks
   infra_enable_private_access = var.infra_enable_private_access
   infra_enable_public_access  = var.infra_enable_public_access
