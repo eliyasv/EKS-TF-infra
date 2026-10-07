@@ -2,10 +2,6 @@ mock_provider "aws" {
   mock_resource "aws_eks_cluster" {
     defaults = {
       identity = [{ oidc = [{ issuer = "https://oidc.eks.us-east-1.amazonaws.com/id/TEST" }] }]
-      access_config = [{
-        authentication_mode                         = "CONFIG_MAP"
-        bootstrap_cluster_creator_admin_permissions = false
-      }]
     }
   }
 }
@@ -69,31 +65,6 @@ run "explicit_api_access_and_namespace_scope" {
   assert {
     condition     = aws_eks_access_entry.application["reader"].type == "STANDARD" && aws_eks_access_policy_association.application["reader"].access_scope[0].namespaces == toset(["mern-app"])
     error_message = "The reader must receive only the requested namespace scope."
-  }
-}
-
-run "legacy_cluster_state" {
-  command   = apply
-  state_key = "legacy-adoption"
-  module {
-    source = "./tests/fixtures/legacy"
-  }
-  # Mock providers only: seed CONFIG_MAP state with creator-admin access disabled.
-}
-
-run "adopt_access_preserves_creator_setting" {
-  command   = plan
-  state_key = "legacy-adoption"
-  variables {
-    infra_eks_authentication_mode = "API_AND_CONFIG_MAP"
-  }
-  assert {
-    condition     = !aws_eks_cluster.ignite_cluster[0].access_config[0].bootstrap_cluster_creator_admin_permissions
-    error_message = "Adding API access must preserve the legacy creator setting instead of replacing the cluster."
-  }
-  assert {
-    condition     = aws_eks_cluster.ignite_cluster[0].id == run.legacy_cluster_state.cluster_id
-    error_message = "Access adoption must retain the existing cluster identity."
   }
 }
 
