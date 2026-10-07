@@ -6,6 +6,23 @@
 # -----------------------------
 # Global Config
 # -----------------------------
+variable "infra_eks_authentication_mode" {
+  description = "Optional EKS authentication mode. Null preserves existing unmanaged access configuration; use API_AND_CONFIG_MAP to manage access entries."
+  type        = string
+  default     = null
+}
+
+variable "infra_eks_access_entries" {
+  description = "Explicit IAM user/role grants, keyed by stable names. Empty preserves manual access management."
+  type = map(object({
+    principal_arn = string
+    policy_arn    = string
+    scope_type    = optional(string, "cluster")
+    namespaces    = optional(set(string), [])
+  }))
+  default = {}
+}
+
 variable "infra_environment" {
   description = "Deployment environment name (e.g., dev, prod)"
   type        = string

@@ -98,6 +98,10 @@ If Kubernetes says the server asked the client to provide credentials, kubeconfi
 
 ## EKS Access Entries
 
+You can use [optional Terraform access management](ecr-and-access.md) instead
+of the manual commands below. Defaults keep manual ownership; import any
+existing entries/policy associations before enabling Terraform management.
+
 Enable API access entries:
 
 ```bash

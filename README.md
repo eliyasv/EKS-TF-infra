@@ -70,6 +70,7 @@ Detailed architecture notes are in [docs/architecture.md](docs/architecture.md).
 |-- Jenkinsfile
 |-- main.tf
 |-- logging.tf
+|-- ecr.tf
 |-- outputs.tf
 |-- providers.tf
 `-- variables.tf
@@ -85,7 +86,7 @@ Detailed architecture notes are in [docs/architecture.md](docs/architecture.md).
 - AWS credentials with permissions for VPC, IAM, EKS, EC2, S3, DynamoDB, and Secrets Manager
 - S3 bucket and DynamoDB table for the configured Terraform backend
 
-Terraform does not create the backend bucket/table, jump server, Jenkins/SonarQube host, ECR repositories, MongoDB Secrets Manager values, or EKS access entries. Provision those prerequisites separately. It creates the External Secrets/Fluent Bit roles, but their Kubernetes controllers and service accounts need post-cluster installation. The companion app's [redeployment checklist](https://github.com/eliyasv/EKS-TF-3tier-app/blob/main/docs/redeployment.md) describes ownership and order.
+Terraform does not create the backend bucket/table, jump server, Jenkins/SonarQube host, or MongoDB Secrets Manager values. ECR repositories and EKS access entries can now be managed through opt-in inputs; their default empty/null inputs preserve manual ownership. Provision those prerequisites separately. It creates the External Secrets/Fluent Bit roles, but their Kubernetes controllers and service accounts need post-cluster installation. The companion app's [redeployment checklist](https://github.com/eliyasv/EKS-TF-3tier-app/blob/main/docs/redeployment.md) describes ownership and order.
 
 ## Quick Start
 
@@ -146,6 +147,8 @@ kubectl get nodes
 ```
 
 Access-entry setup is documented in [docs/usage.md](docs/usage.md).
+
+Optional Terraform-managed ECR and EKS access, including adoption/import of existing resources, are documented in [ECR and access](docs/ecr-and-access.md). No dev/prod tfvars are enabled by this change; repository names and application image paths stay the same.
 
 ## Required Post-Cluster Add-ons
 
