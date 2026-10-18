@@ -1,0 +1,7 @@
+# Paired with chart/controller 3.6.0 and the vendored IAM policy.
+replicaCount: 2
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+# Preserve existing Service behavior; use explicit Ingress/Service configuration.
+enableServiceMutatorWebhook: false

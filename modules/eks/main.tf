@@ -17,6 +17,22 @@ resource "aws_eks_cluster" "ignite_cluster" {
   # Kubernetes version to run for this cluster
   version = var.infra_cluster_version
 
+  # Omit this block unless access management is explicitly enabled.
+  dynamic "access_config" {
+    for_each = var.infra_eks_authentication_mode == null ? [] : [var.infra_eks_authentication_mode]
+    content {
+      authentication_mode = access_config.value
+      # Match the EKS creation default; preserve the existing value below.
+      bootstrap_cluster_creator_admin_permissions = true
+    }
+  }
+
+  lifecycle {
+    # This creation-only field is ForceNew in AWS provider 5.x. Preserve it
+    # when adding access_config to a cluster that already exists.
+    ignore_changes = [access_config[0].bootstrap_cluster_creator_admin_permissions]
+  }
+
   # Networking configuration for the cluster
   vpc_config {
     subnet_ids              = var.private_subnet_ids          # subnets from different AZs recomended

@@ -70,6 +70,7 @@ Detailed architecture notes are in [docs/architecture.md](docs/architecture.md).
 |-- Jenkinsfile
 |-- main.tf
 |-- logging.tf
+|-- ecr.tf
 |-- outputs.tf
 |-- providers.tf
 `-- variables.tf
@@ -85,7 +86,7 @@ Detailed architecture notes are in [docs/architecture.md](docs/architecture.md).
 - AWS credentials with permissions for VPC, IAM, EKS, EC2, S3, DynamoDB, and Secrets Manager
 - S3 bucket and DynamoDB table for the configured Terraform backend
 
-Terraform does not create the backend bucket/table, jump server, Jenkins/SonarQube host, ECR repositories, MongoDB Secrets Manager values, or EKS access entries. Provision those prerequisites separately. It creates the External Secrets/Fluent Bit roles, but their Kubernetes controllers and service accounts need post-cluster installation. The companion app's [redeployment checklist](https://github.com/eliyasv/EKS-TF-3tier-app/blob/main/docs/redeployment.md) describes ownership and order.
+Terraform does not create the backend bucket/table, jump server, Jenkins/SonarQube host, or MongoDB Secrets Manager values. ECR repositories and EKS access entries can now be managed through opt-in inputs; their default empty/null inputs preserve manual ownership. Provision those prerequisites separately. It creates the External Secrets/Fluent Bit roles, but their Kubernetes controllers and service accounts need post-cluster installation. The companion app's [redeployment checklist](https://github.com/eliyasv/EKS-TF-3tier-app/blob/main/docs/redeployment.md) describes ownership and order.
 
 ## Quick Start
 
@@ -147,6 +148,8 @@ kubectl get nodes
 
 Access-entry setup is documented in [docs/usage.md](docs/usage.md).
 
+Optional Terraform-managed ECR and EKS access, including adoption/import of existing resources, are documented in [ECR and access](docs/ecr-and-access.md). No dev/prod tfvars are enabled by this change; repository names and application image paths stay the same.
+
 ## Required Post-Cluster Add-ons
 
 This Terraform repo provisions the EKS cluster and managed add-ons, but these application-facing controllers are installed after the cluster exists:
@@ -157,6 +160,11 @@ This Terraform repo provisions the EKS cluster and managed add-ons, but these ap
 - Cluster Autoscaler, optional for node scaling
 
 Install notes are in [docs/add-ons.md](docs/add-ons.md).
+
+For the next deployment, an optional [Load Balancer Controller bootstrap](docs/load-balancer-bootstrap.md)
+provides Terraform-managed IAM permissions and a pinned Helm installation script.
+Dev enables its IAM resources on the next apply; other environments default to disabled.
+Local checks are complete, and live verification is pending.
 
 Argo CD and the Prometheus/Grafana/Alertmanager stack are bootstrapped separately; their configuration is in the companion app repository. For CloudWatch logging, set `infra_enable_cloudwatch_logs = true` with EKS and IRSA enabled (configured for dev), apply the role/log group first, then let Argo CD roll out the app's Fluent Bit configuration. Use the `fluent_bit_irsa_role_arn` and `application_log_group_name` outputs; see the [logging guide](https://github.com/eliyasv/EKS-TF-3tier-app/blob/main/docs/cloudwatch-logging.md).
 

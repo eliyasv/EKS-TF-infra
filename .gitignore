@@ -18,3 +18,6 @@ override.tf.json
 
 # Local variable definitions
 *.tfvars.json
+
+# Local output exported for the post-cluster bootstrap host.
+bootstrap.json

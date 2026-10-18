@@ -1,64 +1,45 @@
-IAM Module - Least Privilege Guidance
+# IAM module: actual inputs and permissions
 
-This module creates IAM roles for the EKS control plane and EKS node groups. By default it attaches AWS-managed policies for compatibility. For production and security-conscious deployments you should replace managed policies with narrowly scoped custom policies.
+This module can create EKS control-plane/node roles or one IRSA role. The root
+calls it as iam_core and iam_irsa (External Secrets). Logging and optional Load
+Balancer roles are separate root resources; they are not further instances of this module.
 
-How to use custom policies
+## Managed versus custom policies
 
-- Set `infra_use_managed_policies = false` in your root `tfvars`.
-- Provide ARNs for custom policies you manage in your account using the variables:
-- `infra_control_plane_custom_policy_arns` - list of ARNs to attach to control plane role
-- `infra_nodegroup_custom_policy_arns` - list of ARNs to attach to node group role
+Module-level inputs include infra_use_managed_policies,
+infra_control_plane_custom_policy_arns and infra_nodegroup_custom_policy_arns.
+The current root main.tf passes infra_use_managed_policies = true and does not
+expose those custom-policy inputs through root variables. Setting them in root
+tfvars alone does not switch the module: root wiring must also be changed.
 
-Why this approach
+AWS-managed policies are the current learning configuration, not a claim that
+every role has the minimum possible permissions. Custom policies need tested
+per-action resource/condition scoping. The previous simplified ECR/EBS snippets
+were removed: GetAuthorizationToken cannot be repository-scoped, and a single
+resource-tag condition is not a complete EBS CSI policy for all API calls.
 
-- AWS-managed policies are convenient but broad. Replacing them with custom policies scoped to specific ARNs (cluster resources, ECR repos, KMS keys, etc.) enforces least privilege.
-- Recreating the exact behavior of AWS-managed EKS policies is complex. This module therefore lets you supply custom ARNs you control, so you can audit and version policies centrally.
+Current node attachments include AmazonEKSWorkerNodePolicy, AmazonEKS_CNI_Policy,
+AmazonEC2ContainerRegistryReadOnly and AmazonEBSCSIDriverPolicy. Separate workload
+identities for CNI/EBS are future hardening work, not implemented by these attachments.
 
-Example minimal custom policy snippets
+## IRSA role
 
-1) Example ECR read-only policy (attach to node group role)
+infra_enable_irsa controls role creation. The stable map infra_irsa_policy_arns
+selects attachments; subject and cluster OIDC URL/provider identify the trusted
+Kubernetes identity. The root External Secrets subject is
+system:serviceaccount:external-secrets:external-secrets.
 
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ecr:GetDownloadUrlForLayer",
-        "ecr:BatchGetImage",
-        "ecr:BatchCheckLayerAvailability",
-        "ecr:GetAuthorizationToken"
-      ],
-      "Resource": "arn:aws:ecr:${region}:${account_id}:repository/*"
-    }
-  ]
-}
+The reusable trust currently restricts sub, but does not explicitly add an aud
+condition. The prepared root Load Balancer trust includes both. Review this
+hardening difference before claiming identical trust restrictions for all roles.
 
-2) Example scoped permissions for EBS CSI driver (attach to node group role)
+## Dependencies and outputs
 
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ec2:CreateVolume",
-        "ec2:AttachVolume",
-        "ec2:DetachVolume",
-        "ec2:DeleteVolume",
-        "ec2:DescribeVolumes",
-        "ec2:DescribeInstances"
-      ],
-      "Resource": "*",
-       "Condition": {
-         "StringEquals": {
-           "ec2:ResourceTag/kubernetes.io/cluster/${cluster_name}": "owned"
-         }
-       }
-     }
-   ]
- }
+Policy attachment dependencies establish Terraform operation ordering. They do
+not independently measure AWS IAM eventual-consistency propagation. The output
+named iam_policies_propagated is a constant with dependencies, not an AWS probe
+or propagation wait. Service readiness must be verified at deployment time.
 
-
-- The examples above are starting points — validate in a non-production environment before rolling out.
-- Some EKS operations require broad `Describe*` permissions against EC2 and other services; keep `Describe*` actions if needed since they are read-only.
+See [security notes](../../docs/security.md) for worker metadata, access and
+least-privilege follow-ups. Do not migrate roles or revoke grants without a
+reviewed plan and a remaining administration path.

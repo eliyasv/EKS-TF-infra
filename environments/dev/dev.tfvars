@@ -35,6 +35,9 @@ infra_enable_control_plane_iam = true
 infra_enable_node_iam_roles    = true
 infra_enable_irsa              = true
 
+# Create controller IAM permissions; run the Helm bootstrap after provisioning.
+infra_enable_load_balancer_controller = true
+
 # EKS Add-ons
 infra_eks_addons = [
   {
