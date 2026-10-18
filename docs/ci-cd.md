@@ -52,8 +52,13 @@ Current behavior:
 - Supports manual `workflow_dispatch` for `dev` or `prod`.
 - Supports manual actions: `plan`, `apply`, and `destroy`.
 - Uses `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` GitHub secrets.
-- Creates targeted plans for `module.iam_core`, `module.eks`, and `module.iam_irsa`.
-- Applies the downloaded plan artifacts in order when manually dispatched with `apply`.
+- Initializes without the backend for formatting/validation; those checks require
+  provider downloads but no AWS credentials or working state backend.
+- For manual plan/apply, initializes the selected real backend and creates one full
+  saved environment plan without resource targeting.
+- Uploads/downloads that full plan and applies it for a manual apply dispatch.
+- References a GitHub environment for apply/destroy. Reviewers/protection rules
+  must be configured on GitHub; the YAML reference alone is not an approval gate.
 
 Because Jenkins is your current CI path, treat this workflow as optional until you intentionally adopt it. If you do adopt GitHub Actions later, prefer OIDC-based AWS role assumption instead of long-lived AWS access keys.
 

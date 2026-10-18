@@ -82,7 +82,16 @@ type = "ondemand"
 type = "spot"
 ```
 
-The companion app uses these labels to keep MongoDB on stable on-demand nodes while allowing backend/frontend workloads to prefer either on-demand or spot.
+The companion app requires MongoDB on on-demand workers and backend/frontend on
+Spot workers. These are required scheduling rules, not fallback preferences.
+MongoDB also requires separate hosts and three eligible AZs; subnet configuration
+alone does not prove the workers are placed correctly.
+
+Optional root resources add ECR ownership and EKS access grants; defaults leave
+them unmanaged. Logging IAM/log-group resources are in `logging.tf`. Prepared
+Load Balancer Controller IAM and a separate post-cluster Helm script are described
+in [the bootstrap guide](load-balancer-bootstrap.md); their live validation is pending.
+External Secrets and Argo CD installation remain separate bootstrap steps.
 
 ## Environment Sizing
 
