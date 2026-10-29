@@ -41,6 +41,11 @@ AWS us-east-1
 
 Detailed architecture notes are in [docs/architecture.md](docs/architecture.md).
 
+Read [design decisions and tradeoffs](docs/architecture.md#design-decisions-and-tradeoffs)
+for the rationale behind private access, one NAT Gateway, On-Demand/Spot capacity,
+IAM dependency separation, retained ECR ownership and post-cluster bootstrap.
+These describe a learning design; measured savings or production availability are not claimed.
+
 ## Modules
 
 | Module | Purpose |
