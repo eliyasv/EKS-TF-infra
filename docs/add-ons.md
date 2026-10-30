@@ -5,6 +5,16 @@ need separate installation from a host that can reach the private API. Roles
 alone do not install a controller. Record compatible versions before rebuilding;
 the commands below do not assert current AWS version availability.
 
+## EBS CSI managed add-on
+
+When EKS, IRSA and the EBS add-on are configured, Terraform creates a dedicated
+controller role and associates it with the add-on. Workers omit the legacy EBS
+policy unless migration fallback is explicitly enabled. No manual service-account
+annotation or separate installation is needed for this managed-add-on path.
+Read [identity migration and verification](security.md#ebs-csi-dedicated-identity)
+before applying to an existing cluster. Local tests are not proof of live volume
+operations; validate those on the next deployment. Add-on versions are unchanged.
+
 ## AWS Load Balancer Controller
 
 Use the [prepared Terraform and Helm bootstrap](load-balancer-bootstrap.md) for

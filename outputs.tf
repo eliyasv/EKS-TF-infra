@@ -62,3 +62,8 @@ output "external_secrets_irsa_role_arn" {
   description = "IAM Role ARN for External Secrets Operator IRSA"
   value       = module.iam_irsa.irsa_role_arn
 }
+
+output "ebs_csi_irsa_role_arn" {
+  description = "Dedicated IAM role used by the managed EBS CSI controller."
+  value       = module.eks.ebs_csi_irsa_role_arn
+}

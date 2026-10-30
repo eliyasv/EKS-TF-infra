@@ -11,7 +11,7 @@ This repository provisions the cloud foundation: VPC networking, IAM roles, EKS,
 - Separate `dev` and `prod` environments
 - Private EKS API endpoint
 - On-demand and spot managed node groups
-- EKS OIDC provider and IRSA support
+- EKS OIDC provider and IRSA support, including a dedicated managed EBS CSI role
 - Scoped Fluent Bit log-writing permissions and Terraform-managed CloudWatch retention
 - Jenkins-driven Terraform plan/apply/destroy workflow
 - Remote S3 state backend with current DynamoDB locking
@@ -42,6 +42,13 @@ AWS us-east-1
 Detailed architecture notes are in [docs/architecture.md](docs/architecture.md).
 
 ## Modules
+
+With EKS, IRSA and `aws-ebs-csi-driver` configured, the add-on now uses its own
+IAM role and workers omit the legacy EBS policy by default. Dev/prod already
+enable IRSA; no new enable flag is needed. Keep metadata settings unchanged.
+Read [EBS CSI identity and migration](docs/security.md#ebs-csi-dedicated-identity)
+before applying to an existing cluster. Local validation is complete; live
+credential and storage checks remain pending for the next deployment.
 
 | Module | Purpose |
 | --- | --- |

@@ -18,9 +18,12 @@ per-action resource/condition scoping. The previous simplified ECR/EBS snippets
 were removed: GetAuthorizationToken cannot be repository-scoped, and a single
 resource-tag condition is not a complete EBS CSI policy for all API calls.
 
-Current node attachments include AmazonEKSWorkerNodePolicy, AmazonEKS_CNI_Policy,
-AmazonEC2ContainerRegistryReadOnly and AmazonEBSCSIDriverPolicy. Separate workload
-identities for CNI/EBS are future hardening work, not implemented by these attachments.
+Current node attachments include AmazonEKSWorkerNodePolicy, AmazonEKS_CNI_Policy
+and AmazonEC2ContainerRegistryReadOnly. The optional legacy EBS attachment follows
+infra_attach_ebs_policy_to_nodes (module default true). Root disables it when the
+EKS module's dedicated EBS CSI identity is enabled, unless temporary migration
+fallback is selected. CNI workload identity remains separate hardening work.
+See [EBS CSI migration](../../docs/security.md#ebs-csi-dedicated-identity).
 
 ## IRSA role
 
