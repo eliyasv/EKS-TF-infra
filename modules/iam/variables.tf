@@ -47,6 +47,12 @@ variable "infra_nodegroup_custom_policy_arns" {
 }
 
 # IRSA (IAM Roles for Service Accounts) support
+variable "infra_attach_ebs_policy_to_nodes" {
+  description = "Keep the legacy EBS policy on the node role. Root disables this when the EBS CSI dedicated identity is enabled, unless migration fallback is requested."
+  type        = bool
+  default     = true
+}
+
 variable "infra_enable_irsa" {
   description = "Whether to create an IRSA IAM role in this module invocation"
   type        = bool

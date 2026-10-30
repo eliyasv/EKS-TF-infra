@@ -89,7 +89,7 @@ resource "aws_iam_role_policy_attachment" "ignite_nodegroup_registry_policy" {
 
 # AmazonEBSCSIDriverPolicy - Needed for dynamic provisioning of EBS volumes
 resource "aws_iam_role_policy_attachment" "ignite_nodegroup_ebs_policy" {
-  count      = var.infra_create_eks_nodegroup_role && var.infra_use_managed_policies ? 1 : 0
+  count      = var.infra_create_eks_nodegroup_role && var.infra_use_managed_policies && var.infra_attach_ebs_policy_to_nodes ? 1 : 0
   role       = aws_iam_role.ignite_eks_nodegroup_role[0].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }

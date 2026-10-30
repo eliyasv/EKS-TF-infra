@@ -230,10 +230,14 @@ resource "aws_eks_addon" "ignite_addons" {
   # Use the pinned version when provided; otherwise use the compatible version lookup.
   addon_version = each.value.version != null ? each.value.version : data.aws_eks_addon_version.ignite_addons[each.key].version
 
+  # Only the EBS add-on receives this role; leave other add-on identities unchanged.
+  service_account_role_arn = each.key == "aws-ebs-csi-driver" && local.enable_ebs_csi_irsa ? aws_iam_role.ebs_csi[0].arn : null
+
   # Wait until node groups are ready before installing addons
   depends_on = [
     aws_eks_node_group.ignite_ondemand_nodes,
-    aws_eks_node_group.ignite_spot_nodes
+    aws_eks_node_group.ignite_spot_nodes,
+    aws_iam_role_policy_attachment.ebs_csi
   ]
 }
 

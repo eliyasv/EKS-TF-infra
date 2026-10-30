@@ -5,6 +5,12 @@
 
 # Build a consistent `infra_subnets` map when individual subnet lists are provided
 locals {
+  # Only configuration values control IAM counts, never cluster/OIDC attributes.
+  enable_ebs_csi_irsa = var.infra_enable_eks && var.infra_enable_irsa && contains(
+    var.infra_eks_addons == null ? [] : [for addon in var.infra_eks_addons : addon.name],
+    "aws-ebs-csi-driver"
+  )
+
   infra_subnets = var.infra_subnets != null ? var.infra_subnets : {
     for idx, az in var.infra_subnet_azs : "subnet-${idx}" => {
       az           = az
@@ -46,6 +52,8 @@ module "iam_core" {
   infra_create_eks_nodegroup_role = var.infra_enable_node_iam_roles
 
   infra_use_managed_policies = true
+  # Fresh IRSA deployments do not need storage permissions on every worker.
+  infra_attach_ebs_policy_to_nodes = !local.enable_ebs_csi_irsa || var.infra_ebs_csi_node_role_fallback
 }
 
 # -----------------------------
@@ -66,6 +74,8 @@ module "eks" {
   infra_enable_eks            = var.infra_enable_eks
   infra_enable_private_access = var.infra_enable_private_access
   infra_enable_public_access  = var.infra_enable_public_access
+
+  infra_enable_ebs_csi_irsa = local.enable_ebs_csi_irsa
 
   vpc_id                = module.vpc.vpc_id
   private_subnet_ids    = module.vpc.private_subnet_ids

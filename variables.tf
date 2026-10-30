@@ -217,3 +217,9 @@ variable "infra_enable_irsa" {
   type        = bool
   default     = false
 }
+
+variable "infra_ebs_csi_node_role_fallback" {
+  description = "Temporarily keep EBS permissions on workers during an existing-cluster IRSA migration. False for fresh deployments; has no effect on other node policies."
+  type        = bool
+  default     = false
+}

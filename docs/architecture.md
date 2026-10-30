@@ -74,6 +74,8 @@ The `modules/eks` module creates:
 - Spot managed node group
 - EKS managed add-ons
 - OIDC provider used by IRSA
+- Dedicated EBS CSI IRSA role and add-on association when IRSA is enabled and
+  the EBS add-on is configured; legacy node EBS permissions are omitted by default
 
 Node labels:
 
@@ -94,6 +96,13 @@ in [the bootstrap guide](load-balancer-bootstrap.md); their live validation is p
 External Secrets and Argo CD installation remain separate bootstrap steps.
 
 ## Environment Sizing
+
+EBS CSI identity follows `infra_enable_irsa`. The role is created inside the EKS
+module after its OIDC provider, and the add-on waits for its policy attachment.
+The existing cluster/core-role dependency direction stays unchanged. For a fresh
+rebuild no additional flag is needed; an existing cluster can retain node EBS
+permissions temporarily with `infra_ebs_csi_node_role_fallback = true`.
+See [migration and pending live checks](security.md#ebs-csi-dedicated-identity).
 
 Dev is sized for the 3-member MongoDB replica set:
 
